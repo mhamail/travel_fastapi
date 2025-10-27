@@ -1,0 +1,17 @@
+[project]
+name = "travelapp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.17.0",
+    "bcrypt>=5.0.0",
+    "email-validator>=2.3.0",
+    "fastapi>=0.120.0",
+    "gunicorn>=23.0.0",
+    "psycopg2-binary>=2.9.11",
+    "python-jose[cryptography]>=3.5.0",
+    "sqlmodel>=0.0.27",
+    "uvicorn[standard]>=0.38.0",
+]
