@@ -1,3 +1,5 @@
+# AI Prompt: I am converting my express travel app into FastApi, my files are attach that i describe most of the thing of how i do code
+
 # Initialize new project (creates pyproject.toml, main.py, etc.)
 
 ## An extremely fast Python package and project manager, written in Rust.
