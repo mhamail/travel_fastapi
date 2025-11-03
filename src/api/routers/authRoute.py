@@ -13,7 +13,6 @@ from src.api.core import (
     requirePermission,
 )
 
-
 router = APIRouter(tags=["Auth"])
 
 
@@ -26,13 +25,10 @@ def initialize_first_user(
     # Create first user with admin role
     hashed_password = hash_password(request.password)
     user = User(**request.model_dump())
-    user = User(
-        name=request.full_name,
-        email=request.email,
-        phone_no=request.phone,
-        password=hashed_password,
-        is_root=True,
-    )
+    user.password = hashed_password
+    user.verified = True
+    user.is_root = True
+    print(user)
     session.add(user)
     session.flush()
     # Prevent rerun if roles already exist
@@ -45,8 +41,7 @@ def initialize_first_user(
 
     # Create roles
     admin_role = Role(
-        name="root",
-        user_id=user.id,
+        title="root",
         permissions=["all", "system:*"],
     )
 

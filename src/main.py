@@ -1,8 +1,12 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
+from src.api.core.response import api_response
 from .lib.db_con import engine
-from src.api.routers import authRoute
+from src.api.routers import authRoute, userRoute
 
 
 # Define app lifespan — this runs once when the app starts and when it shuts down
@@ -37,9 +41,47 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(ValidationError)
+async def validation_exception_handler(request: Request, exc: ValidationError):
+    return JSONResponse(
+        status_code=422, content={"data": exc.errors(), "message": "Validation failed"}
+    )
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_exception_handler(request: Request, exc: IntegrityError):
+    msg = str(exc.orig)
+    if "duplicate key" in msg or "UNIQUE constraint failed" in msg:
+        error_msg = "Duplicate entry — record already exists."
+    elif "violates not-null constraint" in msg:
+        error_msg = "Required field missing in database insert."
+    else:
+        error_msg = "Database integrity error."
+    return JSONResponse(status_code=422, content={"data": msg, "message": error_msg})
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    # This catches model assignment errors like "User has no field ..."
+    if "has no field" in str(exc):
+        message = str(exc).split('"')[-2] + " is not a valid field name."
+    else:
+        message = str(exc)
+    return JSONResponse(
+        status_code=400,
+        content={"message": message},
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(status_code=400, content={"message": str(exc)})
+
+
 @app.get("/")
 def root():
     return {"message": "Hello, FastAPI with uv!"}
 
 
 app.include_router(authRoute.router)
+app.include_router(userRoute.router)

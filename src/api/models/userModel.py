@@ -1,8 +1,9 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Literal, Optional
 
-from pydantic import BaseModel, EmailStr, constr, model_validator
+from pydantic import BaseModel, EmailStr, constr, field_validator, model_validator
 from sqlmodel import Field, Relationship, SQLModel
+from src.api.core.response import api_response
 from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
 from src.api.models.roleModel import RoleRead
 
@@ -44,7 +45,7 @@ class User(TimeStampedModel, table=True):
 class UserCreate(SQLModel):
     phone: str
     email: Optional[EmailStr] = None
-    password: constr(min_length=6, max_length=72)
+    password: str
     confirm_password: str
     full_name: str
     cnic: Optional[str] = None
@@ -66,9 +67,9 @@ class UserReadBase(TimeStampReadModel):
     id: int
     phone: str
     full_name: str
-    cnic: Optional[str]
-    address: Optional[str]
-    photo_url: Optional[str]
+    cnic: Optional[str] = None
+    address: Optional[str] = None
+    photo_url: Optional[str] = None
     status: str
     verified: bool
     country: str

@@ -18,12 +18,7 @@ def handle_async_wrapper(func):
         try:
             result = func(*args, **kwargs)
             return result
-        except ValidationError as ve:
-            # Pydantic validation issues
-            return api_response(
-                422,
-                content={"message": "Validation error", "details": ve.errors()},
-            )
+
         except IntegrityError as ie:
             # Try to extract the short useful DB message
             msg = str(ie.orig) if ie.orig else str(ie)
@@ -40,10 +35,5 @@ def handle_async_wrapper(func):
         except OperationalError:
             # DB connectivity or operational issues
             return api_response(503, "Database unavailable, try again later")
-        except Exception as e:
-            # Catch-all for unexpected errors, logs for debugging
-            # (you could also use logging here instead of printing)
-            print(f"[ERROR] {e}")
-            return e
 
     return wrapper
