@@ -1,6 +1,7 @@
+from enum import Enum
 from typing import TYPE_CHECKING, Literal, Optional
 
-from pydantic import BaseModel, EmailStr, model_validator
+from pydantic import BaseModel, EmailStr, constr, model_validator
 from sqlmodel import Field, Relationship, SQLModel
 from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
 from src.api.models.roleModel import RoleRead
@@ -9,17 +10,22 @@ if TYPE_CHECKING:
     from src.api.models import Role
 
 
+class UserStatus(str, Enum):
+    active = "active"
+    disabled = "disabled"
+
+
 class User(TimeStampedModel, table=True):
     __tablename__ = "users"
     id: int | None = Field(default=None, primary_key=True)
+    email: Optional[EmailStr] = Field(max_length=191, index=True)
     phone: str = Field(index=True, unique=True, description="User phone number")
     full_name: str = Field(index=True, description="Full name of the user")
     cnic: Optional[str] = Field(default=None, description="CNIC number")
     address: Optional[str] = Field(default=None, description="Address of the user")
     photo_url: Optional[str] = Field(default=None, description="Profile photo URL")
-    status: Literal["active", "disabled"] = Field(
-        default="active", description="User status"
-    )
+    status: UserStatus = Field(default=UserStatus.active, description="User status")
+    is_root: bool = Field(default=False)
     verified: bool = Field(default=False, description="Whether user is verified")
     role_id: Optional[int] = Field(default=None, foreign_key="roles.id")
     role: Optional["Role"] = Relationship(back_populates="users")
@@ -37,7 +43,9 @@ class User(TimeStampedModel, table=True):
 
 class UserCreate(SQLModel):
     phone: str
-    password: str
+    email: Optional[EmailStr] = None
+    password: constr(min_length=6, max_length=72)
+    confirm_password: str
     full_name: str
     cnic: Optional[str] = None
     address: Optional[str] = None

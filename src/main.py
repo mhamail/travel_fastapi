@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .lib.db_con import engine
+from src.api.routers import authRoute
 
 
 # Define app lifespan — this runs once when the app starts and when it shuts down
@@ -35,6 +36,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def root():
     return {"message": "Hello, FastAPI with uv!"}
+
+
+app.include_router(authRoute.router)
