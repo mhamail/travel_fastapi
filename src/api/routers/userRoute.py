@@ -34,5 +34,5 @@ def get_user(
     user_id = id
     db_user = session.get(User, user_id)  # Like findById
     raiseExceptions((db_user, 400, "User not found"))
-
-    return api_response(200, "User Found", db_user.id)
+    user_read = UserRead.model_validate(db_user)
+    return api_response(200, "User Found", user_read)
