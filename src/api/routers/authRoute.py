@@ -22,15 +22,6 @@ def initialize_first_user(
     session: GetSession,
 ):
 
-    # Create first user with admin role
-    hashed_password = hash_password(request.password)
-    user = User(**request.model_dump())
-    user.password = hashed_password
-    user.verified = True
-    user.is_root = True
-    print(user)
-    session.add(user)
-    session.flush()
     # Prevent rerun if roles already exist
     existing_roles = session.exec(select(Role)).all()
     if existing_roles:
@@ -47,6 +38,17 @@ def initialize_first_user(
 
     session.add(admin_role)
     session.flush()  # get IDs without committing
+
+    # Create first user with admin role
+    hashed_password = hash_password(request.password)
+    user = User(**request.model_dump())
+    user.password = hashed_password
+    user.verified = True
+    user.is_root = True
+    user.role_id = admin_role.id
+    print(user)
+    session.add(user)
+    session.flush()
 
     session.commit()
     session.refresh(user)

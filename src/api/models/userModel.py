@@ -63,6 +63,12 @@ class UserCreate(SQLModel):
         return values
 
 
+class UserRole(SQLModel):
+    id: int
+    title: str
+    permissions: list[str]
+
+
 class UserReadBase(TimeStampReadModel):
     id: int
     phone: str
@@ -78,8 +84,8 @@ class UserReadBase(TimeStampReadModel):
     currency_symbol: str
 
 
-class UserRead(UserReadBase):
-    role: Optional[RoleRead] = None
+class UserRead(SQLModel, UserReadBase):
+    role: Optional[UserRole] = None
 
 
 class LoginRequest(SQLModel):
