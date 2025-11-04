@@ -17,7 +17,7 @@ from fastapi.security import (
 
 from src.config import ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY
 from src.api.core.response import api_response
-from src.api.models import User
+
 
 ALGORITHM = "HS256"
 
@@ -29,6 +29,8 @@ pwd_context = CryptContext(
 
 ## get user
 def exist_user(db: Session, email: str):
+    from src.api.models.userModel import User
+
     user = db.exec(select(User).where(User.email == email)).first()
     return user
 

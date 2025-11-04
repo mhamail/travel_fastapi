@@ -2,7 +2,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Literal, Optional
 
 from pydantic import BaseModel, EmailStr, constr, field_validator, model_validator
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Index, Relationship, SQLModel
 from src.api.core.response import api_response
 from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
 from src.api.models.roleModel import RoleRead
@@ -19,15 +19,24 @@ class UserStatus(str, Enum):
 class User(TimeStampedModel, table=True):
     __tablename__ = "users"
     id: int | None = Field(default=None, primary_key=True)
-    email: Optional[EmailStr] = Field(max_length=191, index=True)
-    phone: str = Field(index=True, unique=True, description="User phone number")
+    email: Optional[EmailStr] = Field(max_length=191, unique=True, index=True)
+    phone: str = Field(index=True, description="User phone number")
+    verified: bool = Field(default=False, description="Whether user is verified")
+    # ✅ Conditional unique constraint: phone unique only when verified=True
+    __table_args__ = (
+        Index(
+            "uq_users_phone_verified_true",
+            "phone",
+            unique=True,
+            postgresql_where=(f"verified = true"),
+        ),
+    )
     full_name: str = Field(index=True, description="Full name of the user")
     cnic: Optional[str] = Field(default=None, description="CNIC number")
     address: Optional[str] = Field(default=None, description="Address of the user")
     photo_url: Optional[str] = Field(default=None, description="Profile photo URL")
     status: UserStatus = Field(default=UserStatus.active, description="User status")
     is_root: bool = Field(default=False)
-    verified: bool = Field(default=False, description="Whether user is verified")
     role_id: Optional[int] = Field(default=None, foreign_key="roles.id")
     role: Optional["Role"] = Relationship(back_populates="users")
     password: str = Field(nullable=False, description="Hashed password")
@@ -88,8 +97,8 @@ class UserRead(SQLModel, UserReadBase):
     role: Optional[UserRole] = None
 
 
-class LoginRequest(SQLModel):
-    email: EmailStr
+class LoginRequest(BaseModel):
+    phone: str
     password: str
 
 
