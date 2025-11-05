@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlmodel import Session
 from fastapi import (
     Depends,
+    HTTPException,
     Header,
     Security,
     status,
@@ -154,26 +155,44 @@ def require_signin(
         return api_response(status.HTTP_401_UNAUTHORIZED, "Invalid token", data=str(e))
 
 
-def require_admin(user: dict = Depends(require_signin)):
-    roles: List[str] = user.get("roles", [])
-    if "root" not in roles:
-        api_response(status.HTTP_403_FORBIDDEN, "Root User only")
-    return user
+def require_admin(
+    user: dict = Depends(require_signin),
+):
+    try:
+        if user.get("role") != "admin":
+            api_response(
+                status.HTTP_403_FORBIDDEN,
+                "Access denied: Admins only",
+            )
+
+        return user  # user info with "email", "id", "role"
+
+    except JWTError:
+        api_response(
+            status.HTTP_401_UNAUTHORIZED,
+            "Invalid or expired token",
+        )
 
 
 def require_permission(*permissions: str):
-    def permission_checker(user: dict = Depends(require_signin)):
-        user_permissions: List[str] = user.get("permissions", [])
+    def permission_checker(
+        user: dict = Depends(require_signin),
+    ):
 
-        # ✅ system:* always passes
-        if "system:*" in user_permissions:
-            return user
+        role = user.get("role")
 
-        # ✅ OR logic: check if user has any required permission
+        if not role:
+            api_response(403, "Permission denied")
+
+        user_permissions = role.get("permissions", [])
+        # Allow all if "all" is in permissions
+        # if "system:*" in user_permissions:
+        #     return user
+
+        # Allow if any of the required permissions is present
         if any(p in user_permissions for p in permissions):
             return user
-
-        # ❌ no match → deny
-        api_response(status.HTTP_403_FORBIDDEN, "Permission denied")
+        else:
+            api_response(403, "Permission denied")
 
     return permission_checker

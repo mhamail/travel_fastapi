@@ -1,16 +1,19 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
 from sqlmodel import select
+from src.api.core.utility import Print
 from src.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from src.api.core.security import (
     create_access_token,
+    decode_token,
     exist_user,
     hash_password,
     verify_password,
+    verify_refresh_token,
 )
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from src.api.models.roleModel import Role
-from src.api.models.userModel import UserCreate, User, UserRead, LoginRequest, UserRole
+from src.api.models.userModel import UserCreate, User, UserRead, LoginRequest
 from src.api.core import (
     GetSession,
     api_response,
@@ -115,8 +118,9 @@ def login_user(
     user = session.exec(
         select(User).options(selectinload(User.role)).where(User.phone == request.phone)
     ).first()
-    print(user)
-    return api_response(200, "Login successful", user)
+
+    user_read = UserRead.model_validate(user)
+
     if not user:
         return api_response(404, "User not found")
     if not verify_password(request.password, user.password):
@@ -125,7 +129,8 @@ def login_user(
     #     return api_response(403, "User account is disabled")
 
     # Use properties instead of user.roles
-    role = user.role
+    user_dict = user_read.model_dump()
+    role = user_dict["role"]
 
     user_data = {
         "id": user.id,
@@ -141,8 +146,6 @@ def login_user(
     exp_time = datetime.now(timezone.utc) + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
-
-    # user_read = UserRead.model_validate(user)
     # cookie will test in postman and frontend only with tag credential:true
     response.set_cookie(
         key="refresh_token",
@@ -156,8 +159,69 @@ def login_user(
         "token_type": "bearer",
         "access_token": access_token,
         "refresh_token": refresh_token,
-        "user": user,
+        "user": user_read,
         "exp": exp_time.isoformat(),
     }
 
     return api_response(200, "Login successful", content)
+
+
+@router.post(
+    "/refresh",
+)
+def refresh_token(
+    refresh_token: str,
+):
+    if not refresh_token:
+        api_response(401, "Missing refresh token")
+
+    payload = verify_refresh_token(refresh_token)
+    if not payload:
+        raise api_response(401, "Invalid refresh token")
+    user = decode_token(refresh_token)
+    # user = UserRead.model_validate(db_user)
+    access_token = create_access_token(user)
+    new_refresh_token = create_access_token(user_data=user, refresh=True)
+
+    return api_response(
+        200,
+        "Refresh",
+        {
+            "access_token": access_token,
+            "refresh_token": new_refresh_token,
+            "user": user,
+        },
+    )
+
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie("refresh_token")
+    response.delete_cookie("access_token")
+    return {"message": "Logged out"}
+
+
+@router.get("/testauth", response_model=dict)
+def test_auth(
+    user: requireSignin,
+):
+    return api_response(
+        200,
+        "Token is valid",
+        {"user": user},
+    )
+
+
+@router.get("/testadmin")
+def get_admin_data(
+    user: requireAdmin,
+):
+
+    return {"message": f"Hello Admin {user['phone']}", "user": user}
+
+
+@router.get("/testpermission")
+def get_admin_data(
+    user=requirePermission("system:*"),
+):
+    return api_response(200, "Root Access Granted", {"user": user})
