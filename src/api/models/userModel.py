@@ -103,16 +103,29 @@ class LoginRequest(BaseModel):
 
 
 class UserUpdate(SQLModel):
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
     full_name: Optional[str] = None
     address: Optional[str] = None
     photo_url: Optional[str] = None
-    status: Optional[str] = None
-    verified: Optional[bool] = None
+    cnic: Optional[str] = None
     password: Optional[str] = None
-    country: str
-    country_code: str
-    currency_code: str
-    currency_symbol: str
+    confirm_password: Optional[str] = None
+    country: Optional[str] = str
+    country_code: Optional[str] = str
+    currency_code: Optional[str] = str
+    currency_symbol: Optional[str] = str
+
+    @model_validator(mode="before")
+    def check_password_match(cls, values):
+        password = values.get("password")
+        confirm_password = values.get("confirm_password")
+
+        # ✅ Only check if password provided
+        if password and password != confirm_password:
+            raise ValueError("Passwords do not match")
+
+        return values
 
 
 class UpdateUserByAdmin(UserUpdate):

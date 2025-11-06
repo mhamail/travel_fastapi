@@ -159,7 +159,18 @@ def require_admin(
     user: dict = Depends(require_signin),
 ):
     try:
-        if user.get("role") != "admin":
+        if user.get("role") is None:
+            api_response(
+                status.HTTP_401_UNAUTHORIZED,
+                "Access denied: no role found",
+            )
+        role = user.get("role")
+        user_permissions = role.get("permissions", [])
+        if (
+            role.get("title") != "root"
+            and user.get("is_root") is False
+            and "system:*" not in user_permissions
+        ):
             api_response(
                 status.HTTP_403_FORBIDDEN,
                 "Access denied: Admins only",
@@ -186,8 +197,8 @@ def require_permission(*permissions: str):
 
         user_permissions = role.get("permissions", [])
         # Allow all if "all" is in permissions
-        # if "system:*" in user_permissions:
-        #     return user
+        if "system:*" in user_permissions:
+            return user
 
         # Allow if any of the required permissions is present
         if any(p in user_permissions for p in permissions):

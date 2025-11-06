@@ -118,11 +118,11 @@ def login_user(
     user = session.exec(
         select(User).options(selectinload(User.role)).where(User.phone == request.phone)
     ).first()
+    if not user:
+        return api_response(400, "User not found")
 
     user_read = UserRead.model_validate(user)
 
-    if not user:
-        return api_response(404, "User not found")
     if not verify_password(request.password, user.password):
         return api_response(401, "Incorrect password")
     # if not user.is_active:
