@@ -55,7 +55,6 @@ def initialize_first_user(
     user.verified = True
     user.is_root = True
     user.role_id = admin_role.id
-    print(user)
     session.add(user)
     session.flush()
 
@@ -95,6 +94,8 @@ def register_user(
             "This user already exist",
         )
     user = User(**request.model_dump())  # Similar to new User(req.body) in Mongoose
+    user.phone = None
+    user.unverified_phone = request.phone
     hashed_password = hash_password(user.password)
     user.password = hashed_password
     session.add(user)

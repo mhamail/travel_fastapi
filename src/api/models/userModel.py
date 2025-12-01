@@ -2,7 +2,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Literal, Optional
 
 from pydantic import BaseModel, EmailStr, constr, field_validator, model_validator
-from sqlmodel import Field, Index, Relationship, SQLModel
+from sqlmodel import Field, Index, Relationship, SQLModel, text
 from src.api.core.response import api_response
 from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
 from src.api.models.roleModel import RoleRead
@@ -16,21 +16,38 @@ class UserStatus(str, Enum):
     disabled = "disabled"
 
 
-class User(TimeStampedModel, table=True):
+class UserPhone(SQLModel):
+    # User enters this during registration
+    unverified_phone: Optional[str] = Field(
+        default=None, description="Temporary phone until verified"
+    )
+
+    # Saved only when fully verified
+    phone: Optional[str] = Field(
+        default=None, index=True, description="Verified unique phone"
+    )
+
+    verified: bool = Field(default=False)
+
+    # Conditional unique index for verified phones
+    __table_args__ = (
+        Index(
+            "uq_users_phone_verified",
+            "phone",
+            unique=True,
+            postgresql_where=text("verified = true"),
+        ),
+    )
+
+
+class User(
+    TimeStampedModel,
+    UserPhone,
+    table=True,
+):
     __tablename__ = "users"
     id: int | None = Field(default=None, primary_key=True)
     email: Optional[EmailStr] = Field(max_length=191, unique=True, index=True)
-    phone: str = Field(index=True, description="User phone number")
-    verified: bool = Field(default=False, description="Whether user is verified")
-    # ✅ Conditional unique constraint: phone unique only when verified=True
-    __table_args__ = (
-        Index(
-            "uq_users_phone_verified_true",
-            "phone",
-            unique=True,
-            postgresql_where=(f"verified = true"),
-        ),
-    )
     full_name: str = Field(index=True, description="Full name of the user")
     cnic: Optional[str] = Field(default=None, description="CNIC number")
     address: Optional[str] = Field(default=None, description="Address of the user")
@@ -83,6 +100,7 @@ class UserReadBase(TimeStampReadModel):
     phone: str
     full_name: str
     cnic: Optional[str] = None
+    email: Optional[EmailStr] = None
     address: Optional[str] = None
     photo_url: Optional[str] = None
     status: str
