@@ -47,7 +47,9 @@ class User(
 ):
     __tablename__ = "users"
     id: int | None = Field(default=None, primary_key=True)
-    email: Optional[EmailStr] = Field(max_length=191, unique=True, index=True)
+    email: EmailStr = Field(max_length=191, unique=True, index=True)
+
+    email_verified: bool = Field(default=False, description="Email verification status")
     full_name: str = Field(index=True, description="Full name of the user")
     cnic: Optional[str] = Field(default=None, description="CNIC number")
     address: Optional[str] = Field(default=None, description="Address of the user")
@@ -69,8 +71,8 @@ class User(
 
 
 class UserCreate(SQLModel):
-    phone: str
-    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    email: EmailStr
     password: str
     confirm_password: str
     full_name: str
@@ -97,10 +99,12 @@ class UserRole(SQLModel):
 
 class UserReadBase(TimeStampReadModel):
     id: int
-    phone: str
+    phone: Optional[str] = None
+    unverified_phone: Optional[str] = None
     full_name: str
     cnic: Optional[str] = None
     email: Optional[EmailStr] = None
+    email_verified: bool
     address: Optional[str] = None
     photo_url: Optional[str] = None
     status: str
@@ -116,7 +120,7 @@ class UserRead(SQLModel, UserReadBase):
 
 
 class LoginRequest(BaseModel):
-    phone: str
+    identifier: str  # phone OR email
     password: str
 
 

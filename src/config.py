@@ -13,3 +13,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
     )
 )
 DOMAIN = os.getenv("DOMAIN")
+
+
+# Email
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USER = os.getenv("SMTP_USER", "youremail@gmail.com")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "yourpassword")
+SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
+RESET_URL = os.getenv("RESET_URL", f"{DOMAIN}/reset-password")
