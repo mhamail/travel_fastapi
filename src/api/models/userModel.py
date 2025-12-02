@@ -152,6 +152,8 @@ class UserUpdate(SQLModel):
 
 class UpdateUserByAdmin(UserUpdate):
     role_id: Optional[int] = None
+    verified: Optional[bool] = None
+    email_verified: Optional[bool] = None
 
 
 class ResetPasswordRequest(BaseModel):
