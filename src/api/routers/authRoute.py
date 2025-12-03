@@ -197,8 +197,8 @@ def login_user(
 
     if not verify_password(request.password, user.password):
         return api_response(401, "Incorrect password")
-    # if not user.is_active:
-    #     return api_response(403, "User account is disabled")
+    if not user.is_active:
+        return api_response(403, "User account is disabled")
 
     # Use properties instead of user.roles
     user_dict = user_read.model_dump()

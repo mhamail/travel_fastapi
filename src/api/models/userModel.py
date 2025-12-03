@@ -56,6 +56,7 @@ class User(
     photo_url: Optional[str] = Field(default=None, description="Profile photo URL")
     status: UserStatus = Field(default=UserStatus.active, description="User status")
     is_root: bool = Field(default=False)
+    is_active: bool = Field(default=True)
     role_id: Optional[int] = Field(default=None, foreign_key="roles.id")
     role: Optional["Role"] = Relationship(back_populates="users")
     password: str = Field(nullable=False, description="Hashed password")
@@ -154,6 +155,7 @@ class UpdateUserByAdmin(UserUpdate):
     role_id: Optional[int] = None
     verified: Optional[bool] = None
     email_verified: Optional[bool] = None
+    is_active: Optional[bool] = None
 
 
 class ResetPasswordRequest(BaseModel):

@@ -1,4 +1,7 @@
 from .userModel import User
 from .roleModel import Role
 
-__all__ = ["User", "Role"]
+from .mediaModel import Media
+
+
+__all__ = ["User", "Role", "Media"]

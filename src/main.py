@@ -85,3 +85,4 @@ def root():
 
 app.include_router(authRoute.router)
 app.include_router(userRoute.router)
+# app.include_router(mediaRoute.router)
