@@ -21,6 +21,7 @@ from src.api.models.userModel import (
     UserRead,
     UserReadBase,
     UserUpdate,
+    UserUpdateForm,
 )
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -41,14 +42,15 @@ def get_user(
 @router.put("/update", response_model=UserRead)
 def update_user(
     user: requireSignin,
-    request: UserUpdate,
     session: GetSession,
+    request: UserUpdateForm = Depends(),
 ):
     user_id = user.get("id")
     db_user = session.get(User, user_id)  # Like findById
     raiseExceptions((db_user, 404, "User not found"))
     updated_user = updateOp(db_user, request, session)
     # ✅ Handle password hash only if password provided
+    print("updated_user", updated_user)
     if request.password:
         updated_user.password = hash_password(request.password)
 

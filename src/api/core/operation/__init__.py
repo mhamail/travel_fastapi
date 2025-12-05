@@ -20,20 +20,35 @@ def updateOp(
     session,
     customFields=None,
 ):
+    # CASE 1: Only update custom fields
     if customFields:
         for field in customFields:
             if hasattr(request, field):
                 value = getattr(request, field)
                 if value is not None:
                     setattr(instance, field, value)
+
     else:
-        data = request.model_dump(exclude_unset=True)
+        # CASE 2: Auto-update all fields
+        # Handle both Pydantic models AND plain classes
+        if hasattr(request, "model_dump"):
+            # Pydantic / SQLModel
+            data = request.model_dump(exclude_unset=True)
+        else:
+            # Plain Class: extract fields with vars()
+            data = {
+                key: value for key, value in vars(request).items() if value is not None
+            }
+
+        # Apply updates
         for key, value in data.items():
             setattr(instance, key, value)
+
+    # Update timestamp
     if hasattr(instance, "updated_at"):
         instance.updated_at = datetime.now(timezone.utc)
-    session.add(instance)
 
+    session.add(instance)
     return instance
 
 

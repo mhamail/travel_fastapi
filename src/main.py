@@ -4,15 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
+from sqlmodel import SQLModel
 from src.api.core.response import api_response
 from .lib.db_con import engine
-from src.api.routers import authRoute, userRoute
+from src.api.routers import authRoute, userRoute, mediaRoute
 
 
 # Define app lifespan — this runs once when the app starts and when it shuts down
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # # --- Runs once on startup ---
+    # --- Runs once on startup ---
     # print("🟢 Checking if tables exist...")
 
     # # Create all tables that are missing (safe – only creates non-existent ones)
@@ -85,4 +86,4 @@ def root():
 
 app.include_router(authRoute.router)
 app.include_router(userRoute.router)
-# app.include_router(mediaRoute.router)
+app.include_router(mediaRoute.router)

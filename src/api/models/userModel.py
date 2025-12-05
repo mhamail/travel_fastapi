@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Literal, Optional
 
+from fastapi import File, Form, UploadFile
 from pydantic import BaseModel, EmailStr, constr, field_validator, model_validator
 from sqlmodel import Field, Index, Relationship, SQLModel, text
 from src.api.core.response import api_response
@@ -123,6 +124,37 @@ class UserRead(SQLModel, UserReadBase):
 class LoginRequest(BaseModel):
     identifier: str  # phone OR email
     password: str
+
+
+class UserUpdateForm:
+    def __init__(
+        self,
+        email: Optional[str] = Form(None),
+        phone: Optional[str] = Form(None),
+        full_name: Optional[str] = Form(None),
+        address: Optional[str] = Form(None),
+        cnic: Optional[str] = Form(None),
+        password: Optional[str] = Form(None),
+        confirm_password: Optional[str] = Form(None),
+        country: Optional[str] = Form(None),
+        country_code: Optional[str] = Form(None),
+        currency_code: Optional[str] = Form(None),
+        currency_symbol: Optional[str] = Form(None),
+        # file upload
+        # photo_url: Optional[UploadFile] = File(None),
+    ):
+        self.email = email
+        self.phone = phone
+        self.full_name = full_name
+        self.address = address
+        self.cnic = cnic
+        self.password = password
+        self.confirm_password = confirm_password
+        self.country = country
+        self.country_code = country_code
+        self.currency_code = currency_code
+        self.currency_symbol = currency_symbol
+        # self.photo_url = photo_url
 
 
 class UserUpdate(SQLModel):

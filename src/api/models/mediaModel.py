@@ -1,21 +1,21 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_serializer
-from sqlmodel import SQLModel
+from pydantic import BaseModel, field_serializer
+from sqlmodel import SQLModel, Field
 
 from src.api.models.baseModel import TimeStampedModel
 from src.config import DOMAIN
 
 
-class Media(TimeStampedModel):
+class Media(TimeStampedModel, table=True):
     __tablename__ = "media"
-    id: int = Field(default=None, primary_key=True)
-    filename: str = Field()
-    extension: str = Field()
-    original: str = Field()
+    id: Optional[int] = Field(default=None, primary_key=True)
+    filename: str
+    extension: str
+    original: str
+    media_type: str  # "image" | "video" | "doc"
     size_mb: Optional[float] = Field(default=None)
     thumbnail: Optional[str] = Field(default=None)
-    media_type: str = Field()  # "image" | "video" | "doc"
 
 
 class MediaRead(BaseModel):
