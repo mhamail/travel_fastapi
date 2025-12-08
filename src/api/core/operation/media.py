@@ -7,7 +7,7 @@ from src.api.core.dependencies import GetSession
 from src.api.models.mediaModel import Media
 from sqlalchemy import func
 import os
-from typing import List, Optional
+from typing import List, Optional, TypedDict
 from sqlmodel import select
 
 BASE_DIR = "/var/www"
@@ -18,6 +18,48 @@ ALLOWED_RAW_EXT = [".webp", ".avif", ".ico", ".svg"]
 MAX_SIZE = 2 * 1024 * 1024  # 1 MB
 THUMBNAIL_SIZE = (300, 300)  # max width/height
 MAX_SIZE_MB = MAX_SIZE / (1024 * 1024)
+
+
+class MediaType(TypedDict):
+    filename: str
+    extension: str
+    original: str
+    size_mb: float
+    thumbnail: Optional[str]
+    media_type: str
+
+
+def entryMedia(session: GetSession, files: List[MediaType]):
+    records = []
+    for file_info in files:
+        existing_media = session.scalar(
+            select(Media).where(Media.filename == file_info["filename"])
+        )
+        print(existing_media)
+
+        if existing_media:
+            # ✅ Update existing record
+            existing_media.extension = file_info["extension"]
+            existing_media.original = file_info["original"]
+            existing_media.size_mb = file_info["size_mb"]
+            existing_media.thumbnail = file_info.get("thumbnail")
+            existing_media.media_type = "image"
+            session.add(existing_media)
+            records.append(existing_media)
+        else:
+            # ✅ Create new record
+            media = Media(
+                filename=file_info["filename"],
+                extension=file_info["extension"],
+                original=file_info["original"],
+                size_mb=file_info["size_mb"],
+                thumbnail=file_info.get("thumbnail"),
+                media_type="image",
+            )
+            session.add(media)
+            session.flush()  # ensures ID assigned
+            records.append(media)
+    return records
 
 
 async def uploadImage(files, thumbnail, unique=True):

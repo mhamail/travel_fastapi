@@ -4,7 +4,6 @@ from sqlmodel import select
 from src.api.core.operation import updateOp
 from src.api.core.response import raiseExceptions
 from src.api.core.smtp import send_email
-from src.api.core.utility import Print
 from src.config import ACCESS_TOKEN_EXPIRE_MINUTES, DOMAIN
 from src.api.core.security import (
     create_access_token,
@@ -17,7 +16,6 @@ from src.api.core.security import (
 from sqlalchemy.orm import selectinload, joinedload
 from src.api.models.roleModel import Role
 from src.api.models.userModel import (
-    UpdateUserByAdmin,
     UserCreate,
     User,
     UserRead,
@@ -237,25 +235,6 @@ def login_user(
     }
 
     return api_response(200, "Login successful", content)
-
-
-@router.put("/update_by_admin", response_model=UserRead)
-def update_user(
-    user: requireAdmin,
-    request: UpdateUserByAdmin,
-    session: GetSession,
-):
-    user_id = user.get("id")
-    db_user = session.get(User, user_id)  # Like findById
-    raiseExceptions((db_user, 404, "User not found"))
-    updated_user = updateOp(db_user, request, session)
-    # ✅ Handle password hash only if password provided
-    if request.password:
-        updated_user.password = hash_password(request.password)
-
-    session.commit()
-    session.refresh(db_user)
-    return api_response(200, "User Found", UserRead.model_validate(db_user))
 
 
 @router.post(

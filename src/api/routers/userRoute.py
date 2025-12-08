@@ -1,26 +1,21 @@
 from typing import Optional
-from fastapi import (
-    APIRouter,
-    Depends,
-    Query,
-    Request,
-)
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Query
 
+
+from src.api.core.smtp import send_email
+from src.config import DOMAIN
+from src.api.core.operation.media import entryMedia, uploadImage
 from src.api.core.response import api_response, raiseExceptions
 from src.api.core.operation import listop
 
-from src.api.core.security import hash_password
+from src.api.core.security import create_access_token, hash_password
 from src.api.core import updateOp, requireSignin
 from src.api.core.dependencies import GetSession, requirePermission, requireAdmin
 
 from src.api.models.userModel import (
-    UserCreate,
     UpdateUserByAdmin,
     User,
     UserRead,
-    UserReadBase,
-    UserUpdate,
     UserUpdateForm,
 )
 
@@ -40,7 +35,7 @@ def get_user(
 
 
 @router.put("/update", response_model=UserRead)
-def update_user(
+async def update_user(
     user: requireSignin,
     session: GetSession,
     request: UserUpdateForm = Depends(),
@@ -48,14 +43,67 @@ def update_user(
     user_id = user.get("id")
     db_user = session.get(User, user_id)  # Like findById
     raiseExceptions((db_user, 404, "User not found"))
+    # 🔥 Validate password match manually
+    if request.password and request.password != request.confirm_password:
+        return api_response(400, "Passwords do not match")
+
+    if request.file:
+        files = [request.file]
+        saved_files = await uploadImage(files, thumbnail=False)
+
+        records = entryMedia(session, saved_files)
+
+        request.image = records[0].model_dump(
+            include={"id", "filename", "original", "media_type"}
+        )
+        request.file = None
+
     updated_user = updateOp(db_user, request, session)
-    # ✅ Handle password hash only if password provided
-    print("updated_user", updated_user)
+
     if request.password:
         updated_user.password = hash_password(request.password)
+    # ✅ Handle password hash only if password provided
 
     if request.phone:
         updated_user.verified = False
+        updated_user.unverified_phone = request.phone
+        updated_user.phone = None
+    if request.email:
+        # ✅ Create JWT token (valid for lifetime)
+        token = create_access_token({"id": user.id, "email": user.email})
+        updated_user.email_verified = False
+        # Load template
+        verify_url = f"{DOMAIN}/api/verify-email?token={token}"
+        with open("src/templates/email_verification.html") as f:
+            html_template = f.read().replace("{{VERIFY_URL}}", verify_url)
+        send_email(
+            to_email=user.email,
+            subject="Verify Your Email Address",
+            body=html_template,
+        )
+
+    session.commit()
+    session.refresh(updated_user)
+    return api_response(
+        200, "User Update Successfully", UserRead.model_validate(updated_user)
+    )
+
+
+@router.put("/update_by_admin/{user_id}", response_model=UserRead)
+def update_user(
+    user: requireAdmin,
+    request: UpdateUserByAdmin,
+    user_id: int,
+    session: GetSession,
+):
+    if user_id is None:
+        raise api_response(400, "User ID is required")
+    db_user = session.get(User, user_id)  # Like findById
+    raiseExceptions((db_user, 404, "User not found"))
+    updated_user = updateOp(db_user, request, session)
+    # ✅ Handle password hash only if password provided
+    if request.password:
+        updated_user.password = hash_password(request.password)
 
     session.commit()
     session.refresh(db_user)

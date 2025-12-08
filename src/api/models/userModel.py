@@ -1,9 +1,10 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
 
 from fastapi import File, Form, UploadFile
 from pydantic import BaseModel, EmailStr, constr, field_validator, model_validator
-from sqlmodel import Field, Index, Relationship, SQLModel, text
+
+from sqlmodel import JSON, Column, Field, Index, Relationship, SQLModel, text
 from src.api.core.response import api_response
 from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
 from src.api.models.roleModel import RoleRead
@@ -54,7 +55,9 @@ class User(
     full_name: str = Field(index=True, description="Full name of the user")
     cnic: Optional[str] = Field(default=None, description="CNIC number")
     address: Optional[str] = Field(default=None, description="Address of the user")
-    photo_url: Optional[str] = Field(default=None, description="Profile photo URL")
+    image: Optional[Dict[str, Any]] = Field(
+        default=None, sa_column=Column(JSON), description="Image of the user"
+    )
     status: UserStatus = Field(default=UserStatus.active, description="User status")
     is_root: bool = Field(default=False)
     is_active: bool = Field(default=True)
@@ -80,7 +83,7 @@ class UserCreate(SQLModel):
     full_name: str
     cnic: Optional[str] = None
     address: Optional[str] = None
-    photo_url: Optional[str] = None
+    file: UploadFile = File(...)
     country: str
     country_code: str
     currency_code: str
@@ -108,7 +111,7 @@ class UserReadBase(TimeStampReadModel):
     email: Optional[EmailStr] = None
     email_verified: bool
     address: Optional[str] = None
-    photo_url: Optional[str] = None
+    image: Optional[Dict[str, Any]] = None
     status: str
     verified: bool
     country: str
@@ -129,7 +132,7 @@ class LoginRequest(BaseModel):
 class UserUpdateForm:
     def __init__(
         self,
-        email: Optional[str] = Form(None),
+        email: Optional[EmailStr] = Form(None),
         phone: Optional[str] = Form(None),
         full_name: Optional[str] = Form(None),
         address: Optional[str] = Form(None),
@@ -141,20 +144,28 @@ class UserUpdateForm:
         currency_code: Optional[str] = Form(None),
         currency_symbol: Optional[str] = Form(None),
         # file upload
-        # photo_url: Optional[UploadFile] = File(None),
+        file: UploadFile = File(...),
     ):
-        self.email = email
-        self.phone = phone
-        self.full_name = full_name
-        self.address = address
-        self.cnic = cnic
-        self.password = password
-        self.confirm_password = confirm_password
-        self.country = country
-        self.country_code = country_code
-        self.currency_code = currency_code
-        self.currency_symbol = currency_symbol
-        # self.photo_url = photo_url
+        # Convert empty → None
+        def clean(v):
+            if v is None:
+                return None
+            if isinstance(v, str) and v.strip() == "":
+                return None
+            return v
+
+        self.email = clean(email)
+        self.phone = clean(phone)
+        self.full_name = clean(full_name)
+        self.address = clean(address)
+        self.cnic = clean(cnic)
+        self.password = clean(password)
+        self.confirm_password = clean(confirm_password)
+        self.country = clean(country)
+        self.country_code = clean(country_code)
+        self.currency_code = clean(currency_code)
+        self.currency_symbol = clean(currency_symbol)
+        self.file = file
 
 
 class UserUpdate(SQLModel):

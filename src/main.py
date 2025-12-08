@@ -5,9 +5,10 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel
+
 from src.api.core.response import api_response
 from .lib.db_con import engine
-from src.api.routers import authRoute, userRoute, mediaRoute
+from src.api.routers import authRoute, userRoute, mediaRoute, rideRoute
 
 
 # Define app lifespan — this runs once when the app starts and when it shuts down
@@ -87,3 +88,4 @@ def root():
 app.include_router(authRoute.router)
 app.include_router(userRoute.router)
 app.include_router(mediaRoute.router)
+app.include_router(rideRoute.router)

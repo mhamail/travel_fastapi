@@ -159,7 +159,7 @@ def require_admin(
     user: dict = Depends(require_signin),
 ):
     try:
-        if user.get("role") is None:
+        if user.get("role") is None or user.get("is_root") is None:
             api_response(
                 status.HTTP_401_UNAUTHORIZED,
                 "Access denied: no role found",

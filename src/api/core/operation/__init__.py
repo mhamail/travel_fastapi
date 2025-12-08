@@ -42,7 +42,8 @@ def updateOp(
 
         # Apply updates
         for key, value in data.items():
-            setattr(instance, key, value)
+            if hasattr(instance, key):  # if the key is in the model
+                setattr(instance, key, value)
 
     # Update timestamp
     if hasattr(instance, "updated_at"):
