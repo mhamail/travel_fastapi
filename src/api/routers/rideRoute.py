@@ -87,7 +87,7 @@ async def update_ride(
     user_id = user.get("id")
 
     # ------------------------------
-    # 1️⃣ Find Ride and Verify Owner
+    #  Find Ride and Verify Owner
     # ------------------------------
     ride = session.get(Ride, ride_id)
 
@@ -98,7 +98,7 @@ async def update_ride(
         return api_response(403, "You are not allowed to update this ride")
 
     # ------------------------------
-    # 2️⃣ Handle new car_pic upload
+    #  Handle new car_pic upload
     # ------------------------------
 
     if request.car_pic:
@@ -111,7 +111,7 @@ async def update_ride(
         )
 
     # ------------------------------
-    # 3️⃣ Handle new other_images upload
+    #  Handle new other_images upload
     # ------------------------------
 
     if request.other_images and len(request.other_images) > 0:
@@ -128,7 +128,7 @@ async def update_ride(
         request.other_images = None
 
     # ------------------------------
-    # 4️⃣ Convert from_ → from_location
+    #  Convert from_ → from_location
     # ------------------------------
     if request.from_:
         request.from_location = {
@@ -140,7 +140,7 @@ async def update_ride(
         }
 
     # ------------------------------
-    # 5️⃣ Convert to_ → to_location
+    #  Convert to_ → to_location
     # ------------------------------
     if request.to_:
         request.to_location = {
@@ -152,7 +152,7 @@ async def update_ride(
         }
 
     # ------------------------------
-    # 6️⃣ Convert to serializable dict
+    #  Convert to serializable dict
     # ------------------------------
 
     # delete_files = json.loads(request.delete_images)
@@ -164,7 +164,7 @@ async def update_ride(
         delete_images = []
 
         # -------------------------
-        # 1️⃣ CAR PIC DELETE
+        #  CAR PIC DELETE
         # -------------------------
         car_pic = ride_data.get("car_pic")  # dict or None
 
@@ -178,7 +178,7 @@ async def update_ride(
                 update_data.car_pic = None
 
         # -------------------------
-        # 2️⃣ OTHER IMAGES DELETE
+        # OTHER IMAGES DELETE
         # -------------------------
         other_imgs = ride_data.get("other_images") or []
 
@@ -199,7 +199,7 @@ async def update_ride(
         delete_media_items(session, filenames=delete_images)
 
     # ------------------------------
-    # 7️⃣ Convert arrival_time string → datetime
+    # Convert arrival_time string → datetime
     # ------------------------------
     if "arrival_time" in update_data and update_data["arrival_time"]:
         update_data["arrival_time"] = parse_date(update_data["arrival_time"])
@@ -208,6 +208,6 @@ async def update_ride(
     session.refresh(update_data)
 
     # ------------------------------
-    # 9️⃣ Return formatted response
+    # Return formatted response
     # ------------------------------
     return api_response(200, "Ride Updated Successfully", update_data)
