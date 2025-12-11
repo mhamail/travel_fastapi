@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from enum import Enum
 import json
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional, Union
 
 from fastapi import File, Form, UploadFile
 from pydantic import (
@@ -87,7 +87,7 @@ class Ride(TimeStampedModel, table=True):
     active: bool = Field(default=True)
 
 
-class UserRideFormCreate:
+class UserRideForm:
     def __init__(
         self,
         # JSON (string in form-data)
@@ -107,10 +107,12 @@ class UserRideFormCreate:
         price_per_seat: Optional[str] = Form(None),
         total_price: Optional[str] = Form(None),
         # Boolean
-        negotiable: Optional[str] = Form(None),
+        negotiable: Optional[bool] = Form(None),
         # file upload
-        car_pic: Optional[UploadFile] = File(...),
-        other_images: Optional[List[UploadFile]] = File(...),
+        # ⬇️ FIX: Allow UploadFile OR empty string
+        car_pic: Optional[Union[UploadFile, str]] = File(None),
+        other_images: Optional[List[Union[UploadFile, str]]] = File(None),
+        delete_images: Optional[List[str]] = Form(None),
     ):
         # Convert empty → None
         # Convert empty string → None
@@ -135,6 +137,7 @@ class UserRideFormCreate:
 
         # Convert JSON string → dict
         def clean_json(v):
+
             v = clean(v)
             if v is None:
                 return None
@@ -186,8 +189,16 @@ class UserRideFormCreate:
 
         self.negotiable = to_bool(negotiable)
 
-        self.car_pic = clean(car_pic)
-        self.other_images = clean(other_images)
+        # normalize empty string → None
+        self.car_pic = car_pic if isinstance(car_pic, UploadFile) else None
+
+        # normalize other_images list
+        if other_images:
+            self.other_images = [f for f in other_images if isinstance(f, UploadFile)]
+        else:
+            self.other_images = None
+
+        self.delete_images = clean(delete_images)
 
 
 class LocationRead(BaseModel):

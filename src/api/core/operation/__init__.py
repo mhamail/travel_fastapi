@@ -197,3 +197,25 @@ def listRecords(
         )
     finally:
         session.close()
+
+
+def serialize_obj(obj):
+    """Convert object into JSON-serializable form safely."""
+    if isinstance(obj, (str, int, float, bool, type(None))):
+        return obj
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, list):
+        return [serialize_obj(o) for o in obj]
+    elif isinstance(obj, dict):
+        return {k: serialize_obj(v) for k, v in obj.items()}
+    elif hasattr(obj, "__dict__"):
+        # Only serialize "public" attributes (skip internal SQLAlchemy stuff)
+        return {
+            k: serialize_obj(v)
+            for k, v in obj.__dict__.items()
+            if not k.startswith("_") and k != "metadata"
+        }
+    else:
+        # fallback: convert to string
+        return str(obj)

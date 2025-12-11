@@ -74,3 +74,23 @@ def uniqueSlugify(session, model, name: str, slug_field: str = "slug") -> str:
 
 def Print(data, title="Result"):
     print(f"{title}\n", json.dumps(data, indent=2, default=str))
+
+
+def parse_list(value):
+    """
+    Convert a string like "a,b,c" or ["a,b,c"] into ["a","b","c"]
+    """
+    if not value:
+        return []
+
+    if isinstance(value, list):
+        # list with one comma-joined string
+        if len(value) == 1 and isinstance(value[0], str):
+            return [v.strip() for v in value[0].split(",") if v.strip()]
+        # already normal list
+        return [v.strip() for v in value]
+
+    if isinstance(value, str):
+        return [v.strip() for v in value.split(",") if v.strip()]
+
+    return []
