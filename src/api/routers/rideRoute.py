@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import json
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
+from src.api.core.response import raiseExceptions
 from src.api.core.utility import parse_date, parse_list
 from src.api.core.operation import serialize_obj, updateOp
 from src.api.core.operation.media import delete_media_items, entryMedia, uploadImage
@@ -211,3 +212,25 @@ async def update_ride(
     # Return formatted response
     # ------------------------------
     return api_response(200, "Ride Updated Successfully", update_data)
+
+
+@router.get("/read/{id}", response_model=RideRead)
+def findOne(
+    id: int,
+    session: GetSession,
+):
+
+    read = session.get(Ride, id)  # Like findById
+
+    raiseExceptions((read, 404, "Ride not found"))
+    data = RideRead.model_validate(read)
+    return api_response(200, "Ride Found", data)
+
+
+@router.get("/read", response_model=RideRead)
+def findByUser(session: GetSession, user: requireSignin):
+    if user is None:
+        return api_response(404, "User not found")
+    read = session.get(Ride, user.id)
+    data = RideRead.model_validate(read)
+    return api_response(200, "Ride Found", data)

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 
 from src.api.core.smtp import send_email
 from src.config import DOMAIN
-from src.api.core.operation.media import entryMedia, uploadImage
+from src.api.core.operation.media import delete_media_items, entryMedia, uploadImage
 from src.api.core.response import api_response, raiseExceptions
 from src.api.core.operation import listop
 
@@ -48,6 +48,9 @@ async def update_user(
         return api_response(400, "Passwords do not match")
 
     if request.file:
+        if db_user.image:
+            delete_media_items(session, filenames=[db_user.image["filename"]])
+
         files = [request.file]
         saved_files = await uploadImage(files, thumbnail=False)
 

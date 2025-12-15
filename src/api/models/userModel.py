@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 from fastapi import File, Form, UploadFile
 from pydantic import BaseModel, EmailStr, constr, field_validator, model_validator
@@ -132,7 +132,7 @@ class LoginRequest(BaseModel):
 class UserUpdateForm:
     def __init__(
         self,
-        email: Optional[EmailStr] = Form(None),
+        email: Optional[str] = Form(None),
         phone: Optional[str] = Form(None),
         full_name: Optional[str] = Form(None),
         address: Optional[str] = Form(None),
@@ -144,7 +144,7 @@ class UserUpdateForm:
         currency_code: Optional[str] = Form(None),
         currency_symbol: Optional[str] = Form(None),
         # file upload
-        file: UploadFile = File(...),
+        file: Optional[Union[UploadFile, str]] = File(None),
     ):
         # Convert empty → None
         def clean(v):
@@ -165,7 +165,7 @@ class UserUpdateForm:
         self.country_code = clean(country_code)
         self.currency_code = clean(currency_code)
         self.currency_symbol = clean(currency_symbol)
-        self.file = file
+        self.file: Optional[Union[UploadFile, str]] = file
 
 
 class UserUpdate(SQLModel):
