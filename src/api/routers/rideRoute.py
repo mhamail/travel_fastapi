@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
 import json
+from typing import List
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
+from src.api.core.dependencies import ListQueryParams
 from src.api.core.response import raiseExceptions
 from src.api.core.utility import parse_date, parse_list
-from src.api.core.operation import serialize_obj, updateOp
+from src.api.core.operation import listRecords, serialize_obj, updateOp
 from src.api.core.operation.media import delete_media_items, entryMedia, uploadImage
 from src.api.models.rideModel import Ride, RideRead, UserRideForm
 from src.api.core import (
@@ -227,10 +229,61 @@ def findOne(
     return api_response(200, "Ride Found", data)
 
 
-@router.get("/read", response_model=RideRead)
-def findByUser(session: GetSession, user: requireSignin):
-    if user is None:
-        return api_response(404, "User not found")
-    read = session.get(Ride, user.id)
-    data = RideRead.model_validate(read)
-    return api_response(200, "Ride Found", data)
+@router.get("/list", response_model=list[RideRead])
+def list(query_params: ListQueryParams, session: GetSession):
+    query_params = vars(query_params)
+    searchFields = [
+        "from_address",
+        "to_address",
+        "car_number",
+        "car_type",
+        "car_name",
+        "car_model",
+    ]
+
+    return listRecords(
+        query_params=query_params,
+        searchFields=searchFields,
+        Model=Ride,
+        Schema=RideRead,
+    )
+
+
+@router.get("/listbyuserid", response_model=List[RideRead])
+def list(query_params: ListQueryParams, user: requireSignin, session: GetSession):
+    query_params = vars(query_params)
+    searchFields = [
+        "from_address",
+        "to_address",
+        "car_number",
+        "car_type",
+        "car_name",
+        "car_model",
+    ]
+    user_id = user.get("id")
+    query_params["customFilters"] = [["user_id", user_id]]
+    return listRecords(
+        query_params=query_params,
+        searchFields=searchFields,
+        Model=Ride,
+        Schema=RideRead,
+    )
+
+
+@router.delete("/delete/{id}", response_model=dict)
+def delete_role(
+    id: int,
+    session: GetSession,
+    user: requireSignin,
+):
+    user_id = user.get("id")
+
+    ride = session.get(Ride, id)
+
+    raiseExceptions((ride, 404, "Ride Data not found"))
+    if ride.user_id != user_id:
+        return api_response(403, "You are not allowed to update this ride")
+
+    session.delete(ride)
+    session.commit()
+    return api_response(404, f"Banner {ride.id} deleted")

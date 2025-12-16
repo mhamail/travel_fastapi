@@ -206,7 +206,7 @@ class LocationRead(BaseModel):
     coordinates: List[float]
 
 
-class RideRead(TimeStampReadModel):
+class RideRead(SQLModel, TimeStampReadModel):
     id: int
 
     user_id: int
