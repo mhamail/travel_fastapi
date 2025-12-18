@@ -23,7 +23,8 @@ from src.api.models.roleModel import RoleRead
 car_type_enum = SAEnum(
     CarType,
     name="cartype",  # MUST match existing enum name
-    create_type=False,  # 🚨 important
+    # create_type=False,  # 🚨 important
+    nullable=False,
 )
 
 
@@ -34,7 +35,9 @@ class DefaultRideSetting(TimeStampedModel, table=True):
     __tablename__ = "default_ride_settings"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", description="User who posted the ride")
+    user_id: int = Field(
+        foreign_key="users.id", description="User who posted the ride", unique=True
+    )
 
     car_number: str = Field(description="Car registration number")
     car_pic: Optional[Dict[str, Any]] = Field(
@@ -146,10 +149,14 @@ class DefaultRideSettingForm:
         # normalize empty string → None
         self.car_pic = car_pic if isinstance(car_pic, UploadFile) else None
 
-        self.delete_images = clean(delete_images)
+        self.delete_images = (
+            clean(delete_images)
+            if clean(delete_images) not in (None, [], [""])
+            else None
+        )
 
 
-class RideRead(SQLModel, TimeStampReadModel):
+class DefaultRideSettingRead(SQLModel, TimeStampReadModel):
     id: int
     user_id: int
     car_number: str

@@ -8,7 +8,13 @@ from sqlmodel import SQLModel
 
 from src.api.core.response import api_response
 from .lib.db_con import engine
-from src.api.routers import authRoute, userRoute, mediaRoute, rideRoute
+from src.api.routers import (
+    authRoute,
+    userRoute,
+    mediaRoute,
+    rideRoute,
+    defaultRideSettingRoute,
+)
 
 
 # Define app lifespan — this runs once when the app starts and when it shuts down
@@ -89,3 +95,4 @@ app.include_router(authRoute.router)
 app.include_router(userRoute.router)
 app.include_router(mediaRoute.router)
 app.include_router(rideRoute.router)
+app.include_router(defaultRideSettingRoute.router)
