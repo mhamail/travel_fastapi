@@ -14,6 +14,7 @@ from src.api.routers import (
     mediaRoute,
     rideRoute,
     defaultRideSettingRoute,
+    reviewRoute,
 )
 
 
@@ -96,3 +97,4 @@ app.include_router(userRoute.router)
 app.include_router(mediaRoute.router)
 app.include_router(rideRoute.router)
 app.include_router(defaultRideSettingRoute.router)
+app.include_router(reviewRoute.router)
