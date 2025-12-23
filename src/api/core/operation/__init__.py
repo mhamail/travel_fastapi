@@ -195,8 +195,8 @@ def listRecords(
             400,
             f"Invalid pagination values: {str(e).splitlines()[0]}",
         )
-    finally:
-        session.close()
+    # finally:
+    #     session.close()
 
 
 def serialize_obj(obj):

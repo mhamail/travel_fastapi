@@ -45,9 +45,9 @@ class ReviewUpdate(SQLModel):
 class ReviewRead(TimeStampReadModel):
     id: int
     rating: int
-    comment: Optional[str]
-    reviewer: UserRead
-    target: UserRead
+    comment: Optional[str] = None
+    reviewer: Optional[UserRead] = None
+    target: Optional[UserRead] = None
 
     class Config:
         from_attributes = True

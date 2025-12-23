@@ -35,14 +35,14 @@ def create(
 @router.put("/update/{id}")
 def update(
     id: int,
-    request,
+    request: ReviewUpdate,
     session: GetSession,
     user: requireSignin,
 ):
     review = session.exec(
         select(Review).where(
             Review.id == id,
-            Review.reviewer_id == user.id,
+            Review.reviewer_id == user.get("id"),
         )
     ).first()
 
@@ -73,7 +73,7 @@ def delete(
     review = session.exec(
         select(Review).where(
             Review.id == id,
-            Review.reviewer_id == user.id,
+            Review.reviewer_id == user.get("id"),
             Review.target_id == target_id,
         )
     ).first()
@@ -92,28 +92,39 @@ def list_reviews(
     session: GetSession,
     query_params: ListQueryParams,
 ):
+    query_params = vars(query_params)
+
     response = listRecords(
         query_params=query_params,
         searchFields=["comment"],
+        customFilters=[["target_id", user_id]],
         Model=Review,
-        Schema=ReviewRead,
-        otherFilters=lambda stmt, _: stmt.where(Review.target_id == user_id),
+        # Schema=ReviewRead,
     )
-
-    # aggregation (extra)
+    print(response)
+    list_data = [
+        ReviewRead.model_validate(prod).model_dump() for prod in response["data"]
+    ]
     stats = session.exec(
         select(
-            func.avg(Review.rating).label("averageRating"),
-            func.count(Review.id).label("totalReviews"),
-            func.min(Review.updated_at).label("startDate"),
+            func.avg(Review.rating),
+            func.count(Review.id),
+            func.min(Review.updated_at),
         ).where(Review.target_id == user_id)
     ).one()
 
-    if isinstance(response, dict):
-        response["extra"] = {
-            "averageRating": stats.averageRating,
-            "totalReviews": stats.totalReviews,
-            "startDate": stats.startDate,
-        }
+    data = {
+        "list": list_data,  # ✅ already serialized
+        "extra": {
+            "averageRating": float(stats[0] or 0),
+            "totalReviews": stats[1],
+            "startDate": stats[2],
+        },
+    }
 
-    return response
+    return api_response(
+        200,
+        "data found",
+        data,
+        response["total"],
+    )
