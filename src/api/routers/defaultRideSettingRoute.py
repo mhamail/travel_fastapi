@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import json
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.encoders import jsonable_encoder
 from sqlmodel import select
 from src.api.core.dependencies import ListQueryParams
@@ -30,11 +30,12 @@ async def create_default_ride(
     user: requireSignin,
     session: GetSession,
     request: DefaultRideSettingForm = Depends(),
+    car_pic: UploadFile | None = File(None),  # ✅ HERE
 ):
     user_id = user.get("id")
 
-    if request.car_pic:
-        files = [request.car_pic]
+    if car_pic:
+        files = [car_pic]
         saved_files = await uploadImage(files, thumbnail=False)
 
         records = entryMedia(session, saved_files)
@@ -66,6 +67,7 @@ async def update_ride(
     user: requireSignin,
     session: GetSession,
     request: DefaultRideSettingForm = Depends(),
+    car_pic: UploadFile | None = File(None),  # ✅ HERE
 ):
     user_id = user.get("id")
 
@@ -81,45 +83,27 @@ async def update_ride(
         return api_response(403, "You are not allowed to update this ride")
 
     # ------------------------------
-    #  Handle new car_pic upload
+    # Handle car_pic replacement
     # ------------------------------
+    if car_pic:
+        # 1️⃣ Delete OLD car pic
+        if ride.car_pic and ride.car_pic.get("filename"):
+            delete_media_items(
+                session,
+                filenames=[ride.car_pic["filename"]],
+            )
 
-    if request.car_pic:
-        files = [request.car_pic]
-        saved_files = await uploadImage(files, thumbnail=False)
+        # 2️⃣ Upload NEW car pic
+        saved_files = await uploadImage([car_pic], thumbnail=False)
         records = entryMedia(session, saved_files)
 
         request.car_pic = records[0].model_dump(
             include={"id", "filename", "original", "media_type"}
         )
+    else:
+        request.car_pic = None  # keep unchanged if not sent
 
-    # ------------------------------
-    #  Convert to serializable dict
-    # ------------------------------
-
-    # delete_files = json.loads(request.delete_images)
     update_data = updateOp(ride, request, session)
-    ride_data = serialize_obj(update_data)
-
-    if request.delete_images:
-        delete_files = parse_list(request.delete_images)
-        delete_images = []
-
-        # -------------------------
-        #  CAR PIC DELETE
-        # -------------------------
-        car_pic = ride_data.get("car_pic")  # dict or None
-
-        if car_pic:
-            car_pic_filename = car_pic.get("filename")
-
-            if car_pic_filename and car_pic_filename in delete_files:
-                delete_images.append(car_pic_filename)
-
-                # remove from update_data (Ride ORM)
-                update_data.car_pic = None
-
-        delete_media_items(session, filenames=delete_images)
 
     session.commit()
     session.refresh(update_data)
@@ -142,5 +126,5 @@ def findOne(
     ).first()
 
     raiseExceptions((read, 404, "Ride not found"))
-    data = DefaultRideSetting.model_validate(read)
+    data = DefaultRideSettingRead.model_validate(read)
     return api_response(200, "Ride Found", data)

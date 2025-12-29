@@ -15,6 +15,7 @@ from pydantic import (
 )
 
 from sqlmodel import JSON, Column, Field, Index, Relationship, SQLModel, text
+from src.api.models.userModel import UserRead
 from src.api.models.rideModel import CarType
 from src.api.core.response import api_response
 from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
@@ -26,6 +27,9 @@ car_type_enum = SAEnum(
     # create_type=False,  # 🚨 important
     nullable=False,
 )
+
+if TYPE_CHECKING:
+    from src.api.models import User
 
 
 # ===============================
@@ -59,6 +63,8 @@ class DefaultRideSetting(TimeStampedModel, table=True):
 
     active: bool = Field(default=True)
 
+    user: Optional["User"] = Relationship()
+
 
 class DefaultRideSettingForm:
     def __init__(
@@ -74,10 +80,6 @@ class DefaultRideSettingForm:
         total_price: Optional[str] = Form(None),
         # Boolean
         negotiable: Optional[bool] = Form(None),
-        # file upload
-        # ⬇️ FIX: Allow UploadFile OR empty string
-        car_pic: Optional[Union[UploadFile, str]] = File(None),
-        delete_images: Optional[List[str]] = Form(None),
     ):
         # Convert empty → None
         # Convert empty string → None
@@ -146,19 +148,18 @@ class DefaultRideSettingForm:
 
         self.negotiable = to_bool(negotiable)
 
-        # normalize empty string → None
-        self.car_pic = car_pic if isinstance(car_pic, UploadFile) else None
 
-        self.delete_images = (
-            clean(delete_images)
-            if clean(delete_images) not in (None, [], [""])
-            else None
-        )
+class DefaultRideSettingUserRead(SQLModel):
+    id: int
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    full_name: Optional[str] = None
 
 
 class DefaultRideSettingRead(SQLModel, TimeStampReadModel):
     id: int
     user_id: int
+    user: Optional[DefaultRideSettingUserRead] = None
     car_number: str
     car_pic: Optional[Dict[str, Any]] = None
 

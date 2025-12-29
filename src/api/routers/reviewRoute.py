@@ -99,12 +99,12 @@ def list_reviews(
         searchFields=["comment"],
         customFilters=[["target_id", user_id]],
         Model=Review,
-        # Schema=ReviewRead,
     )
-    print(response)
+
     list_data = [
         ReviewRead.model_validate(prod).model_dump() for prod in response["data"]
     ]
+
     stats = session.exec(
         select(
             func.avg(Review.rating),
