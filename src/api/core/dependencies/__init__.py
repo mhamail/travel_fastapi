@@ -10,6 +10,7 @@ from src.api.core.security import (
     require_permission,
     require_signin,
     require_admin,
+    verified_user,
 )
 
 
@@ -17,6 +18,7 @@ GetSession = Annotated[Session, Depends(get_session)]
 
 requireSignin = Annotated[dict, Depends(require_signin)]
 requireAdmin = Annotated[dict, Depends(require_admin)]
+verifiedUser = Annotated[dict, Depends(verified_user)]
 isAuthenticated = Annotated[dict | None, Depends(is_authenticated)]
 ListQueryParams = Annotated[dict, Depends(list_query_params)]
 

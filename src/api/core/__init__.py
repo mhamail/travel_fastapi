@@ -3,6 +3,7 @@ from .response import api_response, raiseExceptions
 from .dependencies import (
     GetSession,
     requireSignin,
+    verifiedUser,
     requirePermission,
     requireAdmin,
     ListQueryParams,
@@ -12,6 +13,7 @@ from .dependencies import (
 __all__ = [
     "GetSession",
     "requireSignin",
+    "verifiedUser",
     "requirePermission",
     "requireAdmin",
     "ListQueryParams",

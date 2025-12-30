@@ -15,6 +15,7 @@ from src.api.core import (
     requireSignin,
     requireAdmin,
     requirePermission,
+    verifiedUser,
 )
 
 router = APIRouter(prefix="/ride", tags=["ride"])
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/ride", tags=["ride"])
 
 @router.post("/create", response_model=RideRead)
 async def create_ride(
-    user: requireSignin,
+    user: verifiedUser,
     session: GetSession,
     request: UserRideForm = Depends(),
 ):
@@ -83,7 +84,7 @@ async def create_ride(
 @router.put("/update/{ride_id}", response_model=RideRead)
 async def update_ride(
     ride_id: int,
-    user: requireSignin,
+    user: verifiedUser,
     session: GetSession,
     request: UserRideForm = Depends(),
 ):

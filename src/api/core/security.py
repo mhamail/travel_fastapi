@@ -155,6 +155,15 @@ def require_signin(
         return api_response(status.HTTP_401_UNAUTHORIZED, "Invalid token", data=str(e))
 
 
+def verified_user(user: dict = Depends(require_signin)):
+    if user.get("verified") is False:
+        api_response(
+            status.HTTP_423_LOCKED,
+            "User is not verified",
+        )
+    return user
+
+
 def require_admin(
     user: dict = Depends(require_signin),
 ):
