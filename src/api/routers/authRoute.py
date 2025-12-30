@@ -260,7 +260,7 @@ def refresh_token(
         {
             "access_token": access_token,
             "refresh_token": new_refresh_token,
-            "user": user,
+            **user,
         },
     )
 
