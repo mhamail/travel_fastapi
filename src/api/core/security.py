@@ -156,7 +156,7 @@ def require_signin(
 
 
 def verified_user(user: dict = Depends(require_signin)):
-    if user.get("verified") is False:
+    if user.get("verified") is False or user.get("phone") is None:
         api_response(
             status.HTTP_423_LOCKED,
             "User is not verified",

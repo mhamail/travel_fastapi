@@ -196,6 +196,7 @@ class UserUpdate(SQLModel):
 
 class UpdateUserByAdmin(UserUpdate):
     role_id: Optional[int] = None
+    unverified_phone: Optional[str] = None
     verified: Optional[bool] = None
     email_verified: Optional[bool] = None
     is_active: Optional[bool] = None

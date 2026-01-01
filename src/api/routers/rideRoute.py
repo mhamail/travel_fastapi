@@ -23,7 +23,7 @@ router = APIRouter(prefix="/ride", tags=["ride"])
 
 @router.post("/create", response_model=RideRead)
 async def create_ride(
-    user: verifiedUser,
+    user: requireSignin,
     session: GetSession,
     request: UserRideForm = Depends(),
 ):
@@ -184,23 +184,24 @@ async def update_ride(
         # -------------------------
         # OTHER IMAGES DELETE
         # -------------------------
-        other_imgs = ride_data.get("other_images") or []
+        # if not isinstance(ride_data.get("other_images"), list):
+        #     other_imgs = ride_data.get("other_images") or []
 
-        new_other_images = []  # rebuild list without deleted ones
+        #     new_other_images = []  # rebuild list without deleted ones
 
-        for img in other_imgs:
-            filename = img.get("filename")
+        #     for img in other_imgs:
+        #         filename = img.get("filename")
 
-            if filename in delete_files:
-                delete_images.append(filename)
-                continue  # ← skip adding → removes from update_data
+        #         if filename in delete_files:
+        #             delete_images.append(filename)
+        #             continue  # ← skip adding → removes from update_data
 
-            new_other_images.append(img)
+        #         new_other_images.append(img)
 
-        # update ORM object
-        update_data.other_images = new_other_images
+        #     # update ORM object
+        #     update_data.other_images = new_other_images
 
-        delete_media_items(session, filenames=delete_images)
+        # delete_media_items(session, filenames=delete_images)
 
     # ------------------------------
     # Convert arrival_time string → datetime

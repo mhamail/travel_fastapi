@@ -99,6 +99,10 @@ def update_user(
     user_id: int,
     session: GetSession,
 ):
+    if request.phone:
+        request.unverified_phone = None
+    if request.unverified_phone:
+        request.phone = None
     if user_id is None:
         raise api_response(400, "User ID is required")
     db_user = session.get(User, user_id)  # Like findById
