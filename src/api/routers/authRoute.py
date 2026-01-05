@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Response
-from sqlmodel import select
+from sqlmodel import delete, select
 from src.api.core.operation import updateOp
 from src.api.core.response import raiseExceptions
 from src.api.core.smtp import send_email
@@ -170,8 +170,17 @@ def verify_email(token: str, session: GetSession):
         return api_response(200, "Email already verified")
 
     user.email_verified = True
-
     session.add(user)
+
+    # ✅ DELETE all other unverified users with same email
+    session.exec(
+        delete(User).where(
+            User.email == user.email,
+            User.email_verified == False,
+            User.id != user.id,
+        )
+    )
+
     session.commit()
     session.refresh(user)
 
@@ -265,7 +274,16 @@ def update_email(
     ).first()
     if not user:
         return api_response(400, "User not found")
+
+    if request.updateEmail != user.email and exist_verified_email(
+        session, request.updateEmail
+    ):
+        return api_response(
+            400,
+            "This email is already registered and verified.",
+        )
     user.email = request.updateEmail
+    user.email_verified = False
 
     token = create_access_token({"id": user.id, "email": user.email})
 
