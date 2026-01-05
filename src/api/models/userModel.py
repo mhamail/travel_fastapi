@@ -31,16 +31,6 @@ class UserPhone(SQLModel):
 
     verified: bool = Field(default=False)
 
-    # Conditional unique index for verified phones
-    __table_args__ = (
-        Index(
-            "uq_users_phone_verified",
-            "phone",
-            unique=True,
-            postgresql_where=text("verified = true"),
-        ),
-    )
-
 
 class User(
     TimeStampedModel,
@@ -49,9 +39,10 @@ class User(
 ):
     __tablename__ = "users"
     id: int | None = Field(default=None, primary_key=True)
-    email: EmailStr = Field(max_length=191, unique=True, index=True)
+    email: EmailStr = Field(max_length=191, index=True)
 
     email_verified: bool = Field(default=False, description="Email verification status")
+
     full_name: str = Field(index=True, description="Full name of the user")
     cnic: Optional[str] = Field(default=None, description="CNIC number")
     address: Optional[str] = Field(default=None, description="Address of the user")
@@ -69,6 +60,23 @@ class User(
     currency_code: str = Field(description="Currency code (e.g., PKR)")
     currency_symbol: str = Field(description="Currency symbol (e.g., ₨)")
 
+    __table_args__ = (
+        # Conditional unique index for verified phones
+        Index(
+            "uq_users_phone_verified",
+            "phone",
+            unique=True,
+            postgresql_where=text("verified = true"),
+        ),
+        # ✅ Unique verified email only
+        Index(
+            "uq_users_verified_email",
+            "email",
+            unique=True,
+            postgresql_where=text("email_verified = true"),
+        ),
+    )
+
 
 # ==============================================================
 # Schemas (Pydantic style)
@@ -83,7 +91,7 @@ class UserCreate(SQLModel):
     full_name: str
     cnic: Optional[str] = None
     address: Optional[str] = None
-    file: UploadFile = File(...)
+    # file: UploadFile = File(...)
     country: str
     country_code: str
     currency_code: str
@@ -122,6 +130,12 @@ class UserReadBase(TimeStampReadModel):
 
 class UserRead(SQLModel, UserReadBase):
     role: Optional[UserRole] = None
+
+
+class updateEmail(BaseModel):
+    email: str
+    password: str
+    updateEmail: EmailStr
 
 
 class LoginRequest(BaseModel):

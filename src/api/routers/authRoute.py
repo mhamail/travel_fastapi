@@ -20,6 +20,7 @@ from src.api.models.userModel import (
     User,
     UserRead,
     LoginRequest,
+    updateEmail,
 )
 from src.api.core import (
     GetSession,
@@ -84,6 +85,18 @@ def exist_verified_user(session, phone: str):
     ).first()
 
 
+def exist_verified_email(session, email: str) -> bool:
+    return (
+        session.exec(
+            select(User.id).where(
+                User.email == email,
+                User.email_verified == True,
+            )
+        ).first()
+        is not None
+    )
+
+
 @router.post("/register", response_model=UserRead)
 def register_user(
     request: UserCreate,
@@ -95,11 +108,11 @@ def register_user(
             400, "This phone number is already registered and verified."
         )
 
-    db_user = exist_user(session, email=request.email)
-    if db_user:
+    # ❌ Block if email is already verified
+    if exist_verified_email(session, request.email):
         return api_response(
             400,
-            "This user already exist",
+            "This email is already registered and verified.",
         )
     if request.phone is None:
         return api_response(
@@ -151,6 +164,10 @@ def verify_email(token: str, session: GetSession):
 
     if not user:
         return api_response(400, "Invalid or expired verification token")
+
+    # Already verified → idempotent success
+    if user.email_verified:
+        return api_response(200, "Email already verified")
 
     user.email_verified = True
 
@@ -235,6 +252,41 @@ def login_user(
     }
 
     return api_response(200, "Login successful", content)
+
+
+@router.post("/update-email")
+def update_email(
+    request: updateEmail,
+    session: GetSession,
+):
+    email = request.email.strip()
+    user = session.exec(
+        select(User).options(selectinload(User.role)).where(User.email == email)
+    ).first()
+    if not user:
+        return api_response(400, "User not found")
+    user.email = request.updateEmail
+
+    token = create_access_token({"id": user.id, "email": user.email})
+
+    verify_url = f"{DOMAIN}/api/verify-email?token={token}"
+    with open("src/templates/email_verification.html") as f:
+        html_template = f.read().replace("{{VERIFY_URL}}", verify_url)
+
+    # Send email
+    send_email(
+        to_email=user.email,
+        subject="Verify Your Email Address",
+        body=html_template,
+    )
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return api_response(
+        200, "User Email Updated , Verify Your Email", UserRead.model_validate(user)
+    )
 
 
 @router.post(

@@ -1,6 +1,6 @@
 from urllib.parse import quote_plus
 from fastapi import APIRouter
-from src.api.models.userModel import User
+from src.api.models.userModel import User, UserRead
 from src.api.core import (
     GetSession,
     api_response,
@@ -49,4 +49,30 @@ def verify_me(
         200,
         "Verification link generated",
         {"verify_link": whatsapp_link},
+    )
+
+
+@router.post("/to/{user_id}", response_model=UserRead)
+def verify_me(
+    user_id: int,
+    user: requireAdmin,
+    session: GetSession,
+):
+
+    db_user = session.get(User, user_id)
+
+    if not db_user:
+        return api_response(404, "User not found")
+
+    db_user.verified = True
+    db_user.phone = db_user.unverified_phone
+    db_user.unverified_phone = None
+    session.commit()
+    session.refresh(db_user)
+    updated_user = UserRead.model_validate(db_user)
+
+    return api_response(
+        200,
+        "Verification link generated",
+        {"verify_link": updated_user},
     )
