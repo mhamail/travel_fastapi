@@ -2,6 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 
+from src.api.routers.authRoute import exist_verified_email
 from src.api.core.smtp import send_email
 from src.config import DOMAIN
 from src.api.core.operation.media import delete_media_items, entryMedia, uploadImage
@@ -72,6 +73,13 @@ async def update_user(
         updated_user.unverified_phone = request.phone
         updated_user.phone = None
     if request.email:
+        if request.email != user.get("email") and exist_verified_email(
+            session, request.email
+        ):
+            return api_response(
+                400,
+                "This email is already registered and verified.",
+            )
         # ✅ Create JWT token (valid for lifetime)
         token = create_access_token({"id": user.id, "email": user.email})
         updated_user.email_verified = False
