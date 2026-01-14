@@ -48,31 +48,31 @@ async def update_user(
     if request.password and request.password != request.confirm_password:
         return api_response(400, "Passwords do not match")
 
-    if request.file:
-        if db_user.image:
-            delete_media_items(session, filenames=[db_user.image["filename"]])
+    # if request.file:
+    #     if db_user.image:
+    #         delete_media_items(session, filenames=[db_user.image["filename"]])
 
-        files = [request.file]
-        saved_files = await uploadImage(files, thumbnail=False)
+    #     files = [request.file]
+    #     saved_files = await uploadImage(files, thumbnail=False)
 
-        records = entryMedia(session, saved_files)
+    #     records = entryMedia(session, saved_files)
 
-        request.image = records[0].model_dump(
-            include={"id", "filename", "original", "media_type"}
-        )
-        request.file = None
+    #     request.image = records[0].model_dump(
+    #         include={"id", "filename", "original", "media_type"}
+    #     )
+    #     request.file = None
 
     updated_user = updateOp(db_user, request, session)
-
+    print(db_user)
     if request.password:
         updated_user.password = hash_password(request.password)
     # ✅ Handle password hash only if password provided
 
-    if request.phone:
+    if request.phone and request.phone != user.get("phone"):
         updated_user.verified = False
         updated_user.unverified_phone = request.phone
         updated_user.phone = None
-    if request.email:
+    if request.email and request.email != user.get("email"):
         if request.email != user.get("email") and exist_verified_email(
             session, request.email
         ):
@@ -81,14 +81,14 @@ async def update_user(
                 "This email is already registered and verified.",
             )
         # ✅ Create JWT token (valid for lifetime)
-        token = create_access_token({"id": user.id, "email": user.email})
+        verify_token = create_access_token({"id": db_user.id, "email": db_user.email})
         updated_user.email_verified = False
         # Load template
-        verify_url = f"{DOMAIN}/api/verify-email?token={token}"
+        verify_url = f"{DOMAIN}/api/verify-email?verify_token={verify_token}"
         with open("src/templates/email_verification.html") as f:
             html_template = f.read().replace("{{VERIFY_URL}}", verify_url)
         send_email(
-            to_email=user.email,
+            to_email=db_user.email,
             subject="Verify Your Email Address",
             body=html_template,
         )
