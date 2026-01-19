@@ -8,7 +8,7 @@ from src.api.core.response import raiseExceptions
 from src.api.core.utility import parse_date, parse_list
 from src.api.core.operation import listRecords, serialize_obj, updateOp
 from src.api.core.operation.media import delete_media_items, entryMedia, uploadImage
-from src.api.models.rideModel import Ride, RideRead, UserRideForm
+from src.api.models.rideModel import Ride, RideRead, RideReadWithUser, UserRideForm
 from src.api.core import (
     GetSession,
     api_response,
@@ -218,7 +218,7 @@ async def update_ride(
     return api_response(200, "Ride Updated Successfully", update_data)
 
 
-@router.get("/read/{id}", response_model=RideRead)
+@router.get("/read/{id}", response_model=RideReadWithUser)
 def findOne(
     id: int,
     session: GetSession,
@@ -227,7 +227,11 @@ def findOne(
     read = session.get(Ride, id)  # Like findById
 
     raiseExceptions((read, 404, "Ride not found"))
-    data = RideRead.model_validate(read)
+    data = RideReadWithUser.model_validate(read)
+    # 👇 condition here
+    if not data.user or not data.user.verified:
+        return api_response(400, "User Not Verified")
+
     return api_response(200, "Ride Found", data)
 
 

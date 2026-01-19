@@ -10,7 +10,7 @@ from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
 from src.api.models.roleModel import RoleRead
 
 if TYPE_CHECKING:
-    from src.api.models import Role
+    from src.api.models import Role, Ride
 
 
 class UserStatus(str, Enum):
@@ -53,12 +53,14 @@ class User(
     is_root: bool = Field(default=False)
     is_active: bool = Field(default=True)
     role_id: Optional[int] = Field(default=None, foreign_key="roles.id")
-    role: Optional["Role"] = Relationship(back_populates="users")
     password: str = Field(nullable=False, description="Hashed password")
     country: str = Field(description="Country name (e.g., Pakistan)")
     country_code: str = Field(description="Country code (e.g., PK)")
     currency_code: str = Field(description="Currency code (e.g., PKR)")
     currency_symbol: str = Field(description="Currency symbol (e.g., ₨)")
+    # relation
+    role: Optional["Role"] = Relationship(back_populates="users")
+    rides: Optional[List["Ride"]] = Relationship(back_populates="user")
 
     __table_args__ = (
         # Conditional unique index for verified phones

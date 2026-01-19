@@ -19,6 +19,9 @@ from src.api.core.response import api_response
 from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
 from src.api.models.roleModel import RoleRead
 
+if TYPE_CHECKING:
+    from src.api.models import User
+
 
 class CarType(str, Enum):
     sedan = "sedan"
@@ -85,6 +88,8 @@ class Ride(TimeStampedModel, table=True):
     car_model: Optional[str] = Field(default=None)
 
     active: bool = Field(default=True)
+
+    user: Optional["User"] = Relationship(back_populates="rides")
 
 
 class UserRideForm:
@@ -235,3 +240,15 @@ class RideRead(SQLModel, TimeStampReadModel):
     car_model: Optional[str] = None
 
     active: bool
+
+
+class UserReadRide(SQLModel):
+    id: int
+    full_name: str
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    verified: bool
+
+
+class RideReadWithUser(RideRead):
+    user: UserReadRide
