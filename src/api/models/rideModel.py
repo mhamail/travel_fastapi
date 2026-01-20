@@ -113,6 +113,7 @@ class UserRideForm:
         total_price: Optional[str] = Form(None),
         # Boolean
         negotiable: Optional[bool] = Form(None),
+        active: Optional[bool] = Form(None),
         # file upload
         # ⬇️ FIX: Allow UploadFile OR empty string
         car_pic: Optional[Union[UploadFile, str]] = File(None),
@@ -193,6 +194,7 @@ class UserRideForm:
         self.total_price = to_float(total_price)
 
         self.negotiable = to_bool(negotiable)
+        self.active = to_bool(active)
 
         # normalize empty string → None
         self.car_pic = car_pic if isinstance(car_pic, UploadFile) else None

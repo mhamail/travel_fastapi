@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
@@ -58,6 +59,8 @@ class User(
     country_code: str = Field(description="Country code (e.g., PK)")
     currency_code: str = Field(description="Currency code (e.g., PKR)")
     currency_symbol: str = Field(description="Currency symbol (e.g., ₨)")
+    otp_code: Optional[str] = None
+    otp_expires_at: Optional[datetime] = None
     # relation
     role: Optional["Role"] = Relationship(back_populates="users")
     rides: Optional[List["Ride"]] = Relationship(back_populates="user")
@@ -218,13 +221,23 @@ class UpdateUserByAdmin(UserUpdate):
     is_active: Optional[bool] = None
 
 
-class ResetPasswordRequest(BaseModel):
-    token: str
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordWithOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
     new_password: str
     confirm_password: str
 
     @model_validator(mode="before")
     def check_password_match(cls, values):
-        if values.get("new_password") != values.get("confirm_password"):
+        password = values.get("new_password")
+        confirm_password = values.get("confirm_password")
+
+        # ✅ Only check if password provided
+        if password and password != confirm_password:
             raise ValueError("Passwords do not match")
+
         return values

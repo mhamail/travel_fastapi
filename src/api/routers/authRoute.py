@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from random import randint
 from fastapi import APIRouter, Depends, Response
 from sqlmodel import delete, select
 from src.api.core.operation import updateOp
@@ -16,6 +17,8 @@ from src.api.core.security import (
 from sqlalchemy.orm import selectinload, joinedload
 from src.api.models.roleModel import Role
 from src.api.models.userModel import (
+    ForgotPasswordRequest,
+    ResetPasswordWithOTPRequest,
     UserCreate,
     User,
     UserRead,
@@ -340,6 +343,70 @@ def logout(response: Response):
     response.delete_cookie("refresh_token")
     response.delete_cookie("access_token")
     return {"message": "Logged out"}
+
+
+@router.post("/forgot-password")
+def forgot_password(
+    request: ForgotPasswordRequest,
+    session: GetSession,
+):
+    email = request.email.strip().lower()
+
+    user = session.exec(select(User).where(User.email == email)).first()
+
+    # ✅ Do NOT reveal whether email exists (security best practice)
+    if not user:
+        return api_response(200, "If this email exists, an OTP has been sent.")
+
+    # Generate 6-digit OTP
+    otp = f"{randint(100000, 999999)}"
+    user.otp_code = otp
+    user.otp_expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    session.add(user)
+    session.commit()
+
+    # Send OTP via email or SMS
+    send_email(
+        to_email=user.email,
+        subject="Your Password Reset OTP",
+        body=f"Your OTP code is: {otp} (valid for 10 minutes)",
+    )
+
+    return api_response(200, "If this email exists, an OTP has been sent.")
+
+
+@router.post("/reset-password")
+def reset_password(
+    request: ResetPasswordWithOTPRequest,
+    session: GetSession,
+):
+    email = request.email.strip().lower()
+    otp = request.otp.strip()
+    new_password = request.new_password
+
+    user = session.exec(select(User).where(User.email == email)).first()
+    if not user:
+        return api_response(400, "Invalid email or OTP")
+
+    expires_at = user.otp_expires_at
+
+    # 🔐 normalize legacy naive timestamps
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if user.otp_code != otp or expires_at < datetime.now(timezone.utc):
+        return api_response(400, "Invalid or expired OTP")
+
+    # Reset password
+    user.password = hash_password(new_password)
+    user.otp_code = None  # clear OTP
+    user.otp_expires_at = None
+    user.updated_at = datetime.now(timezone.utc)
+
+    session.add(user)
+    session.commit()
+
+    return api_response(200, "Password has been reset successfully")
 
 
 @router.get("/testauth", response_model=dict)
