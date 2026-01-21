@@ -28,7 +28,8 @@ async def create_ride(
     request: UserRideForm = Depends(),
 ):
     user_id = user.get("id")
-
+    print(type(request.other_images))
+    print("request====================", request.other_images)
     if request.car_pic:
         files = [request.car_pic]
         saved_files = await uploadImage(files, thumbnail=False)
@@ -68,6 +69,7 @@ async def create_ride(
     ride_data = serialize_obj(request)
     ride_data["user_id"] = user_id
 
+    # print("ride_data==================", ride_data)
     if "arrival_time" in ride_data:
         ride_data["arrival_time"] = parse_date(ride_data["arrival_time"])
 

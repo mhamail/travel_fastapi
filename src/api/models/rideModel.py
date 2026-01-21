@@ -8,10 +8,6 @@ from fastapi import File, Form, UploadFile
 from pydantic import (
     BaseModel,
     EmailStr,
-    conint,
-    constr,
-    field_validator,
-    model_validator,
 )
 
 from sqlmodel import JSON, Column, Field, Index, Relationship, SQLModel, text
@@ -116,8 +112,9 @@ class UserRideForm:
         active: Optional[bool] = Form(None),
         # file upload
         # ⬇️ FIX: Allow UploadFile OR empty string
-        car_pic: Optional[Union[UploadFile, str]] = File(None),
-        other_images: Optional[List[Union[UploadFile, str]]] = File(None),
+        # File field
+        car_pic: Optional[UploadFile] = File(None),
+        other_images: List[UploadFile] = File(...),  # ✅ Multiple files
         delete_images: Optional[List[str]] = Form(None),
     ):
         # Convert empty → None
@@ -197,13 +194,10 @@ class UserRideForm:
         self.active = to_bool(active)
 
         # normalize empty string → None
-        self.car_pic = car_pic if isinstance(car_pic, UploadFile) else None
+        self.car_pic = car_pic
 
-        # normalize other_images list
-        if other_images:
-            self.other_images = [f for f in other_images if isinstance(f, UploadFile)]
-        else:
-            self.other_images = None
+        # ✅ Better normalization
+        self.other_images = other_images or []  # ✅ Simple fallback
 
         self.delete_images = clean(delete_images)
 
