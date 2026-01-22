@@ -114,7 +114,7 @@ class UserRideForm:
         # ⬇️ FIX: Allow UploadFile OR empty string
         # File field
         car_pic: Optional[UploadFile] = File(None),
-        other_images: List[UploadFile] = File(...),  # ✅ Multiple files
+        other_images: List[UploadFile] = File(default=[]),  # ✅ Multiple files
         delete_images: Optional[List[str]] = Form(None),
     ):
         # Convert empty → None
