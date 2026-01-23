@@ -11,6 +11,7 @@ from pydantic import (
 )
 
 from sqlmodel import JSON, Column, Field, Index, Relationship, SQLModel, text
+from src.api.models.mediaModel import MediaRead
 from src.api.core.response import api_response
 from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
 from src.api.models.roleModel import RoleRead
@@ -221,8 +222,8 @@ class RideRead(SQLModel, TimeStampReadModel):
     arrival_time: datetime
 
     car_number: str
-    car_pic: Optional[Dict[str, Any]] = None
-    other_images: Optional[List[Dict[str, Any]]] = None
+    car_pic: Optional[MediaRead] = None
+    other_images: Optional[List[MediaRead]] = None
 
     seats_available: int
     price_per_seat: Optional[float] = None

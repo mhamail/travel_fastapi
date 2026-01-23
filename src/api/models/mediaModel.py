@@ -21,9 +21,9 @@ class Media(TimeStampedModel, table=True):
 class MediaRead(BaseModel):
     id: int
     filename: str
-    extension: str
+    # extension: Optional[str] = None
     original: str
-    size_mb: Optional[float] = None
+    # size_mb: Optional[float] = None
     thumbnail: Optional[str] = None
     media_type: str
 
