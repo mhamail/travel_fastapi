@@ -12,6 +12,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
         30,
     )
 )
+ACCESS_TOKEN_EXPIRE = int(
+    os.getenv(
+        "ACCESS_TOKEN_EXPIRE",
+        30,
+    )
+)
 DOMAIN = os.getenv("DOMAIN")
 
 

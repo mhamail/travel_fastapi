@@ -23,6 +23,18 @@ from src.api.models.userModel import (
 router = APIRouter(prefix="/user", tags=["user"])
 
 
+@router.get("/read", response_model=UserRead)
+def get_user(
+    user: requireSignin,
+    session: GetSession,
+):
+    user_id = user.get("id")
+    db_user = session.get(User, user_id)  # Like findById
+    raiseExceptions((db_user, 400, "User not found"))
+    user_read = UserRead.model_validate(db_user)
+    return api_response(200, "User Found", user_read)
+
+
 @router.get("/read/{id}", response_model=UserRead)
 def get_user(
     id: int,

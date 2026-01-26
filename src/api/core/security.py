@@ -16,7 +16,7 @@ from fastapi.security import (
     HTTPBearer,
 )
 
-from src.config import ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY
+from src.config import SECRET_KEY, ACCESS_TOKEN_EXPIRE
 from src.api.core.response import api_response
 
 
@@ -54,7 +54,7 @@ def create_access_token(
         expire = datetime.now(timezone.utc) + timedelta(days=30)
     else:
         expire = datetime.now(timezone.utc) + (
-            expires or timedelta(hours=ACCESS_TOKEN_EXPIRE_MINUTES)
+            expires or timedelta(days=ACCESS_TOKEN_EXPIRE)
         )
 
     payload = {

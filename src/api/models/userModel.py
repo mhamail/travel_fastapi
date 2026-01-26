@@ -6,6 +6,7 @@ from fastapi import File, Form, UploadFile
 from pydantic import BaseModel, EmailStr, constr, field_validator, model_validator
 
 from sqlmodel import JSON, Column, Field, Index, Relationship, SQLModel, text
+from src.api.models.mediaModel import MediaRead
 from src.api.core.response import api_response
 from src.api.models.baseModel import TimeStampedModel, TimeStampReadModel
 from src.api.models.roleModel import RoleRead
@@ -124,7 +125,7 @@ class UserReadBase(TimeStampReadModel):
     email: Optional[EmailStr] = None
     email_verified: bool
     address: Optional[str] = None
-    image: Optional[Dict[str, Any]] = None
+    image: Optional[MediaRead] = None
     status: str
     verified: bool
     country: str
