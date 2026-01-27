@@ -151,7 +151,6 @@ def delete_media_items(
     session: GetSession,
     ids: Optional[List[int]] = None,
     filenames: Optional[List[str]] = None,
-    forceRemove: bool = False,
 ) -> dict:
     """
     Delete media by IDs or filenames.

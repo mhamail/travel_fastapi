@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
-
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from src.api.routers.authRoute import exist_verified_email
 from src.api.core.smtp import send_email
@@ -60,22 +60,22 @@ async def update_user(
     if request.password and request.password != request.confirm_password:
         return api_response(400, "Passwords do not match")
 
-    # if request.file:
-    #     if db_user.image:
-    #         delete_media_items(session, filenames=[db_user.image["filename"]])
+    if isinstance(request.file, StarletteUploadFile):
+        if db_user.image:
+            delete_media_items(session, filenames=[db_user.image["filename"]])
 
-    #     files = [request.file]
-    #     saved_files = await uploadImage(files, thumbnail=False)
+        files = [request.file]
+        saved_files = await uploadImage(files, thumbnail=False)
 
-    #     records = entryMedia(session, saved_files)
+        records = entryMedia(session, saved_files)
 
-    #     request.image = records[0].model_dump(
-    #         include={"id", "filename", "original", "media_type"}
-    #     )
-    #     request.file = None
+        request.image = records[0].model_dump(
+            include={"id", "filename", "original", "media_type"}
+        )
+        request.file = None
 
     updated_user = updateOp(db_user, request, session)
-    print(db_user)
+
     if request.password:
         updated_user.password = hash_password(request.password)
     # ✅ Handle password hash only if password provided
