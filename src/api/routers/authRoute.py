@@ -89,15 +89,16 @@ def exist_verified_user(session, phone: str):
 
 
 def exist_verified_email(session, email: str) -> bool:
-    return (
-        session.exec(
-            select(User.id).where(
-                User.email == email,
-                User.email_verified == True,
-            )
-        ).first()
-        is not None
-    )
+
+    user = session.exec(
+        select(User.id).where(
+            User.email == email,
+            User.email_verified == True,
+        )
+    ).first()
+    print({"user===========": user})
+    print(email)
+    return True if user else False
 
 
 @router.post("/register", response_model=UserRead)
@@ -345,7 +346,7 @@ def logout(response: Response):
     return {"message": "Logged out"}
 
 
-@router.post("/forgot-password")
+@router.post("/send-email")
 def forgot_password(
     request: ForgotPasswordRequest,
     session: GetSession,

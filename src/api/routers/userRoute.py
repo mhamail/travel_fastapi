@@ -74,6 +74,16 @@ async def update_user(
         )
         request.file = None
 
+    if (
+        request.email
+        and request.email != user.get("email")
+        and exist_verified_email(session, request.email)
+    ):
+        return api_response(
+            400,
+            "This email is already registered and verified.",
+        )
+
     updated_user = updateOp(db_user, request, session)
 
     if request.password:
@@ -85,13 +95,7 @@ async def update_user(
         updated_user.unverified_phone = request.phone
         updated_user.phone = None
     if request.email and request.email != user.get("email"):
-        if request.email != user.get("email") and exist_verified_email(
-            session, request.email
-        ):
-            return api_response(
-                400,
-                "This email is already registered and verified.",
-            )
+
         # ✅ Create JWT token (valid for lifetime)
         verify_token = create_access_token({"id": db_user.id, "email": db_user.email})
         updated_user.email_verified = False
