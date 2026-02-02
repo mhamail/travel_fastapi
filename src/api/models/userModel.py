@@ -222,8 +222,13 @@ class UpdateUserByAdmin(UserUpdate):
     is_active: Optional[bool] = None
 
 
-class ForgotPasswordRequest(BaseModel):
+class EmailRequest(BaseModel):
     email: EmailStr
+
+
+class EmailVerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
 
 
 class ResetPasswordWithOTPRequest(BaseModel):

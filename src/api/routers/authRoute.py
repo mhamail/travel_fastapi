@@ -17,7 +17,7 @@ from src.api.core.security import (
 from sqlalchemy.orm import selectinload, joinedload
 from src.api.models.roleModel import Role
 from src.api.models.userModel import (
-    ForgotPasswordRequest,
+    EmailRequest,
     ResetPasswordWithOTPRequest,
     UserCreate,
     User,
@@ -346,9 +346,10 @@ def logout(response: Response):
     return {"message": "Logged out"}
 
 
+# forgot otp password send
 @router.post("/send-email")
 def forgot_password(
-    request: ForgotPasswordRequest,
+    request: EmailRequest,
     session: GetSession,
 ):
     email = request.email.strip().lower()
