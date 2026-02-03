@@ -28,3 +28,6 @@ SMTP_USER = os.getenv("SMTP_USER", "youremail@gmail.com")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "yourpassword")
 SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 RESET_URL = os.getenv("RESET_URL", f"{DOMAIN}/reset-password")
+
+
+AUTH_PASSWORD = os.getenv("AUTH_PASSWORD")

@@ -13,13 +13,14 @@ from src.api.core import (
     requirePermission,
     verifiedUser,
 )
+from src.config import AUTH_PASSWORD
 
 router = APIRouter(prefix="/verify", tags=["verify"])
 
 phone = "923355144441"
 
 
-@router.post("/me")
+@router.get("/me")
 def verify_me(
     user: requireSignin,
     session: GetSession,
@@ -59,10 +60,10 @@ def verify_me(
 # phone verify
 
 
-@router.post("/to/{user_id}", response_model=UserRead)
+@router.get("/to/{user_id}/{password}", response_model=UserRead)
 def verify_me(
     user_id: int,
-    user: requireAdmin,
+    password: str,
     session: GetSession,
 ):
 
@@ -71,6 +72,8 @@ def verify_me(
     if not db_user:
         return api_response(404, "User not found")
 
+    if password != AUTH_PASSWORD:
+        return api_response(400, "Wrong Password")
     db_user.verified = True
     db_user.phone = db_user.unverified_phone
     db_user.unverified_phone = None
