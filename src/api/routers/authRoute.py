@@ -135,7 +135,7 @@ def register_user(
     # ✅ Create JWT token (valid for lifetime)
     token = create_access_token({"id": user.id, "email": user.email})
 
-    verify_url = f"{DOMAIN}/api/verify-email?token={token}"
+    verify_url = f"{DOMAIN}/verify-email?token={token}"
     # Load template
     with open("src/templates/email_verification.html") as f:
         html_template = f.read().replace("{{VERIFY_URL}}", verify_url)
