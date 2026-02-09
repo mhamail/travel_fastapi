@@ -135,7 +135,7 @@ def register_user(
     # ✅ Create JWT token (valid for lifetime)
     token = create_access_token({"id": user.id, "email": user.email})
 
-    verify_url = f"{DOMAIN}/verify-email?token={token}"
+    verify_url = f"{DOMAIN}/verify/verify-email?token={token}"
     # Load template
     with open("src/templates/email_verification.html") as f:
         html_template = f.read().replace("{{VERIFY_URL}}", verify_url)
@@ -152,43 +152,6 @@ def register_user(
         "Check Your Email to Verify Your Account",
         user_read,
     )
-
-
-@router.get("/verify-email")
-def verify_email(token: str, session: GetSession):
-    decode = decode_token(token)
-    if not decode:
-        return api_response(400, "Invalid or expired verification token")
-
-    user_data = decode.get("user")
-    if not user_data:
-        return api_response(400, "Invalid token payload")
-
-    user = session.exec(select(User).where(User.email == user_data["email"])).first()
-
-    if not user:
-        return api_response(400, "Invalid or expired verification token")
-
-    # Already verified → idempotent success
-    if user.email_verified:
-        return api_response(200, "Email already verified")
-
-    user.email_verified = True
-    session.add(user)
-
-    # ✅ DELETE all other unverified users with same email
-    session.exec(
-        delete(User).where(
-            User.email == user.email,
-            User.email_verified == False,
-            User.id != user.id,
-        )
-    )
-
-    session.commit()
-    session.refresh(user)
-
-    return api_response(200, "Email verified successfully!")
 
 
 @router.post("/login", response_model=dict)

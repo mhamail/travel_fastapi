@@ -2,6 +2,7 @@ from fastapi import Query, Depends
 from typing import Annotated, Optional
 
 
+# use double commas otherwise it will not work
 class list_query_params:
     def __init__(
         self,
