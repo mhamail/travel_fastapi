@@ -1,7 +1,10 @@
 from datetime import datetime, timezone
 import json
 import re
+from typing import Any, List
 import unicodedata
+
+from fastapi import UploadFile
 
 
 date_formats = [
@@ -94,3 +97,11 @@ def parse_list(value):
         return [v.strip() for v in value.split(",") if v.strip()]
 
     return []
+
+
+def is_upload_file(obj: Any) -> bool:
+    return isinstance(obj, UploadFile)
+
+
+def filter_upload_files(files: List[Any]) -> List[UploadFile]:
+    return [f for f in files if isinstance(f, UploadFile)]

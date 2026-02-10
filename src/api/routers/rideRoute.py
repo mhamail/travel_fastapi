@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from src.api.core.dependencies import ListQueryParams
 from src.api.core.response import raiseExceptions
-from src.api.core.utility import parse_date, parse_list
+from src.api.core.utility import (
+    filter_upload_files,
+    is_upload_file,
+    parse_date,
+    parse_list,
+)
 from src.api.core.operation import listRecords, serialize_obj, updateOp
 from src.api.core.operation.media import delete_media_items, entryMedia, uploadImage
 from src.api.models.rideModel import Ride, RideRead, RideReadWithUser, UserRideForm
@@ -107,7 +112,7 @@ async def update_ride(
     #  Handle new car_pic upload
     # ------------------------------
 
-    if request.car_pic:
+    if request.car_pic and is_upload_file(request.car_pic):
         files = [request.car_pic]
         saved_files = await uploadImage(files, thumbnail=False)
         records = entryMedia(session, saved_files)
@@ -115,23 +120,27 @@ async def update_ride(
         request.car_pic = records[0].model_dump(
             include={"id", "filename", "original", "media_type"}
         )
+    elif request.car_pic is None:
+        # None → do not touch existing value
+        delattr(request, "car_pic")
 
     # ------------------------------
     #  Handle new other_images upload
     # ------------------------------
 
     if request.other_images and len(request.other_images) > 0:
-        files = request.other_images
-        saved_files = await uploadImage(files, thumbnail=False)
-        records = entryMedia(session, saved_files)
+        upload_files = filter_upload_files(request.other_images)
+        if upload_files:
+            saved_files = await uploadImage(upload_files, thumbnail=False)
+            records = entryMedia(session, saved_files)
 
-        # Convert SQLModel objects to dict (safe for JSON)
-        request.other_images = [
-            r.model_dump(include={"id", "filename", "original", "media_type"})
-            for r in records
-        ]
+            # Convert SQLModel objects to dict (safe for JSON)
+            request.other_images = [
+                r.model_dump(include={"id", "filename", "original", "media_type"})
+                for r in records
+            ]
     else:
-        request.other_images = None
+        delattr(request, "other_images")
 
     # ------------------------------
     #  Convert from_ → from_location
@@ -165,7 +174,7 @@ async def update_ride(
     update_data = updateOp(ride, request, session)
     ride_data = serialize_obj(update_data)
 
-    if request.delete_images:
+    if request.delete_images and len(request.delete_images) > 0:
         delete_files = parse_list(request.delete_images)
         delete_images = []
 
