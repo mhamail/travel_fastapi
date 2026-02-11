@@ -2,12 +2,11 @@ from datetime import datetime, timezone
 import json
 from typing import List
 from fastapi import APIRouter, Depends
+from starlette.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
 from src.api.core.dependencies import ListQueryParams
 from src.api.core.response import raiseExceptions
 from src.api.core.utility import (
-    filter_upload_files,
-    is_upload_file,
     parse_date,
     parse_list,
 )
@@ -33,8 +32,8 @@ async def create_ride(
     request: UserRideForm = Depends(),
 ):
     user_id = user.get("id")
-    print(type(request.other_images))
-    print("request====================", request.other_images)
+    # print(type(request.other_images))
+    # print("request====================", request.other_images)
     if request.car_pic:
         files = [request.car_pic]
         saved_files = await uploadImage(files, thumbnail=False)
@@ -95,6 +94,7 @@ async def update_ride(
     session: GetSession,
     request: UserRideForm = Depends(),
 ):
+
     user_id = user.get("id")
 
     # ------------------------------
@@ -111,8 +111,9 @@ async def update_ride(
     # ------------------------------
     #  Handle new car_pic upload
     # ------------------------------
-
-    if request.car_pic and is_upload_file(request.car_pic):
+    print("=========================", request.__dict__)
+    print(isinstance(request.car_pic, UploadFile))
+    if isinstance(request.car_pic, UploadFile):
         files = [request.car_pic]
         saved_files = await uploadImage(files, thumbnail=False)
         records = entryMedia(session, saved_files)
@@ -120,16 +121,17 @@ async def update_ride(
         request.car_pic = records[0].model_dump(
             include={"id", "filename", "original", "media_type"}
         )
-    elif request.car_pic is None:
-        # None → do not touch existing value
-        delattr(request, "car_pic")
+    else:
+        # Not a file → do NOT update
+        if hasattr(request, "car_pic"):
+            delattr(request, "car_pic")
 
     # ------------------------------
     #  Handle new other_images upload
     # ------------------------------
 
-    if request.other_images and len(request.other_images) > 0:
-        upload_files = filter_upload_files(request.other_images)
+    if hasattr(request, "other_images"):
+        upload_files = [f for f in request.other_images if isinstance(f, UploadFile)]
         if upload_files:
             saved_files = await uploadImage(upload_files, thumbnail=False)
             records = entryMedia(session, saved_files)
@@ -139,6 +141,9 @@ async def update_ride(
                 r.model_dump(include={"id", "filename", "original", "media_type"})
                 for r in records
             ]
+        else:
+            # It was [""] or invalid values → ignore field
+            delattr(request, "other_images")
     else:
         delattr(request, "other_images")
 
@@ -174,45 +179,53 @@ async def update_ride(
     update_data = updateOp(ride, request, session)
     ride_data = serialize_obj(update_data)
 
-    if request.delete_images and len(request.delete_images) > 0:
+    if request.delete_images:
         delete_files = parse_list(request.delete_images)
-        delete_images = []
 
-        # -------------------------
-        #  CAR PIC DELETE
-        # -------------------------
-        car_pic = ride_data.get("car_pic")  # dict or None
+        # Remove empty strings
+        delete_files = [f for f in delete_files if f and f.strip() != ""]
 
-        if car_pic:
-            car_pic_filename = car_pic.get("filename")
+        if delete_files:
 
-            if car_pic_filename and car_pic_filename in delete_files:
-                delete_images.append(car_pic_filename)
+            delete_images = []
 
-                # remove from update_data (Ride ORM)
-                update_data.car_pic = None
+            # -------------------------
+            #  CAR PIC DELETE
+            # -------------------------
+            car_pic = ride_data.get("car_pic")  # dict or None
 
-        # -------------------------
-        # OTHER IMAGES DELETE
-        # -------------------------
-        # if not isinstance(ride_data.get("other_images"), list):
-        #     other_imgs = ride_data.get("other_images") or []
+            if car_pic:
+                car_pic_filename = car_pic.get("filename")
 
-        #     new_other_images = []  # rebuild list without deleted ones
+                if car_pic_filename and car_pic_filename in delete_files:
+                    delete_images.append(car_pic_filename)
 
-        #     for img in other_imgs:
-        #         filename = img.get("filename")
+                    # remove from update_data (Ride ORM)
+                    update_data.car_pic = None
+        else:
+            delattr(request, "delete_images")
 
-        #         if filename in delete_files:
-        #             delete_images.append(filename)
-        #             continue  # ← skip adding → removes from update_data
+    # -------------------------
+    # OTHER IMAGES DELETE
+    # -------------------------
+    # if not isinstance(ride_data.get("other_images"), list):
+    #     other_imgs = ride_data.get("other_images") or []
 
-        #         new_other_images.append(img)
+    #     new_other_images = []  # rebuild list without deleted ones
 
-        #     # update ORM object
-        #     update_data.other_images = new_other_images
+    #     for img in other_imgs:
+    #         filename = img.get("filename")
 
-        # delete_media_items(session, filenames=delete_images)
+    #         if filename in delete_files:
+    #             delete_images.append(filename)
+    #             continue  # ← skip adding → removes from update_data
+
+    #         new_other_images.append(img)
+
+    #     # update ORM object
+    #     update_data.other_images = new_other_images
+
+    # delete_media_items(session, filenames=delete_images)
 
     # ------------------------------
     # Convert arrival_time string → datetime
