@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 import json
-from typing import List
-from fastapi import APIRouter, Depends
+from typing import List, Optional, Union
+from fastapi import APIRouter, Depends, File
+from fastapi import UploadFile as UploadFileType
 from starlette.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
 from src.api.core.dependencies import ListQueryParams
@@ -109,45 +110,6 @@ async def update_ride(
         return api_response(403, "You are not allowed to update this ride")
 
     # ------------------------------
-    #  Handle new car_pic upload
-    # ------------------------------
-    print("=========================", request.__dict__)
-    print(isinstance(request.car_pic, UploadFile))
-    if isinstance(request.car_pic, UploadFile):
-        files = [request.car_pic]
-        saved_files = await uploadImage(files, thumbnail=False)
-        records = entryMedia(session, saved_files)
-
-        request.car_pic = records[0].model_dump(
-            include={"id", "filename", "original", "media_type"}
-        )
-    else:
-        # Not a file → do NOT update
-        if hasattr(request, "car_pic"):
-            delattr(request, "car_pic")
-
-    # ------------------------------
-    #  Handle new other_images upload
-    # ------------------------------
-
-    if hasattr(request, "other_images"):
-        upload_files = [f for f in request.other_images if isinstance(f, UploadFile)]
-        if upload_files:
-            saved_files = await uploadImage(upload_files, thumbnail=False)
-            records = entryMedia(session, saved_files)
-
-            # Convert SQLModel objects to dict (safe for JSON)
-            request.other_images = [
-                r.model_dump(include={"id", "filename", "original", "media_type"})
-                for r in records
-            ]
-        else:
-            # It was [""] or invalid values → ignore field
-            delattr(request, "other_images")
-    else:
-        delattr(request, "other_images")
-
-    # ------------------------------
     #  Convert from_ → from_location
     # ------------------------------
     if request.from_:
@@ -171,61 +133,78 @@ async def update_ride(
             ],
         }
 
+    print("=========================", request.__dict__)
+
+    # ------------------------------
+    #  Handle new car_pic upload
+    # ------------------------------
+    if isinstance(request.car_pic, UploadFile):
+        if ride.car_pic:
+            delete_media_items(session, filenames=[ride.car_pic["filename"]])
+
+        files = [request.car_pic]
+        saved_files = await uploadImage(files, thumbnail=False)
+        records = entryMedia(session, saved_files)
+
+        request.car_pic = records[0].model_dump(
+            include={"id", "filename", "original", "media_type"}
+        )
+    else:
+        # Not a file → do NOT update
+        if hasattr(request, "car_pic"):
+            delattr(request, "car_pic")
+
+    # ------------------------------
+    #  Handle new other_images upload
+    # ------------------------------
+
+    existing_images = ride.other_images or []
+    new_uploaded_images = []
+    filenames_to_delete = []
+
+    # -----------------------
+    # 1️⃣ DELETE REQUESTED IMAGES
+    # -----------------------
+    if request.delete_images:
+        filenames_to_delete = request.delete_images
+
+        # Remove from existing_images
+        existing_images = [
+            img
+            for img in existing_images
+            if img.get("filename") not in filenames_to_delete
+        ]
+
+        # Delete from media table
+        delete_media_items(session, filenames=filenames_to_delete)
+
+    # -----------------------
+    # 2️⃣ HANDLE NEW UPLOADS
+    # -----------------------
+    if hasattr(request, "other_images"):
+        upload_files = [f for f in request.other_images if isinstance(f, UploadFile)]
+
+        if upload_files:
+            saved_files = await uploadImage(upload_files, thumbnail=False)
+            records = entryMedia(session, saved_files)
+
+            new_uploaded_images = [
+                r.model_dump(include={"id", "filename", "original", "media_type"})
+                for r in records
+            ]
+
+    # -----------------------
+    # 3️⃣ MERGE EXISTING + NEW
+    # -----------------------
+    merged_images = existing_images + new_uploaded_images
+    request.other_images = merged_images
+
     # ------------------------------
     #  Convert to serializable dict
     # ------------------------------
 
     # delete_files = json.loads(request.delete_images)
     update_data = updateOp(ride, request, session)
-    ride_data = serialize_obj(update_data)
-
-    if request.delete_images:
-        delete_files = parse_list(request.delete_images)
-
-        # Remove empty strings
-        delete_files = [f for f in delete_files if f and f.strip() != ""]
-
-        if delete_files:
-
-            delete_images = []
-
-            # -------------------------
-            #  CAR PIC DELETE
-            # -------------------------
-            car_pic = ride_data.get("car_pic")  # dict or None
-
-            if car_pic:
-                car_pic_filename = car_pic.get("filename")
-
-                if car_pic_filename and car_pic_filename in delete_files:
-                    delete_images.append(car_pic_filename)
-
-                    # remove from update_data (Ride ORM)
-                    update_data.car_pic = None
-        else:
-            delattr(request, "delete_images")
-
-    # -------------------------
-    # OTHER IMAGES DELETE
-    # -------------------------
-    # if not isinstance(ride_data.get("other_images"), list):
-    #     other_imgs = ride_data.get("other_images") or []
-
-    #     new_other_images = []  # rebuild list without deleted ones
-
-    #     for img in other_imgs:
-    #         filename = img.get("filename")
-
-    #         if filename in delete_files:
-    #             delete_images.append(filename)
-    #             continue  # ← skip adding → removes from update_data
-
-    #         new_other_images.append(img)
-
-    #     # update ORM object
-    #     update_data.other_images = new_other_images
-
-    # delete_media_items(session, filenames=delete_images)
 
     # ------------------------------
     # Convert arrival_time string → datetime

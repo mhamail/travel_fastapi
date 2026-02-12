@@ -5,6 +5,7 @@ import json
 from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional, Union
 
 from fastapi import File, Form, UploadFile
+
 from pydantic import (
     BaseModel,
     EmailStr,
@@ -117,7 +118,7 @@ class UserRideForm:
         # car_pic: Optional[UploadFile] = File(None),
         # other_images: List[UploadFile] = File(default=[]),  # ✅ Multiple files
         car_pic: Optional[Union[UploadFile, str]] = File(None),
-        other_images: Optional[List[Union[UploadFile, str]]] = File(None),
+        other_images: List[UploadFile] = File(default=[]),
         delete_images: Optional[List[str]] = Form(None),
     ):
         # Convert empty → None
