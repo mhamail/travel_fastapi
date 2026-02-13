@@ -179,19 +179,25 @@ def delete_media_items(
         # --- Delete original file ---
         file_path = os.path.join(MEDIA_DIR, media.filename)
         if os.path.exists(file_path):
-            os.remove(file_path)
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass  # silently ignore file deletion error
 
-        # --- Delete thumbnail ---
+        # -------------------------
+        # Delete thumbnail
+        # -------------------------
         if media.thumbnail:
             thumb_path = os.path.join(MEDIA_DIR, os.path.basename(media.thumbnail))
-            if os.path.exists(thumb_path):
-                os.remove(thumb_path)
         else:
             base, _ = os.path.splitext(media.filename)
-            thumb_name = f"{base}_thumb.webp"
-            thumb_path = os.path.join(MEDIA_DIR, thumb_name)
-            if os.path.exists(thumb_path):
+            thumb_path = os.path.join(MEDIA_DIR, f"{base}_thumb.webp")
+
+        if os.path.exists(thumb_path):
+            try:
                 os.remove(thumb_path)
+            except Exception:
+                pass  # ignore thumbnail deletion error
 
         # --- Remove from DB ---
         session.delete(media)
