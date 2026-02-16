@@ -14,7 +14,7 @@ class list_query_params:
         ),
         searchTerm: str | None = Query(None, description="Search term"),
         columnFilters: Optional[str] = Query(
-            None, description="Example : '[['name','car'],['description','product']]"
+            None, description='Example : [["name","car"],["description","product"]]'
         ),
         stringArrayFilters: Optional[str] = Query(
             None, description="Example: [['tags',['tag1','tag2']]]"

@@ -294,6 +294,7 @@ def applyFilters(
     stringArrayFilters: Optional[List[List[str]]] = None,
     objectArrayFilters: Optional[List[List[str]]] = None,
 ):
+
     if otherFilters:
         # pass the current statement through the hook
         statement = otherFilters(statement, Model)
@@ -359,7 +360,8 @@ def applyFilters(
             else:
                 filters.append(attr == value)
 
-        statement = statement.where(and_(*filters))
+        if filters:
+            statement = statement.where(and_(*filters))
 
         return statement
 
@@ -411,7 +413,7 @@ def applyFilters(
 
         statement = statement.where(and_(column >= start_date, column <= end_date))
 
-        # Sorting
+    # Sorting
 
     if sort:
         try:

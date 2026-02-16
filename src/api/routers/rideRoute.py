@@ -270,12 +270,12 @@ def list(query_params: ListQueryParams, user: requireSignin, session: GetSession
         "car_model",
     ]
     user_id = user.get("id")
-    query_params["customFilters"] = [["user_id", user_id]]
     return listRecords(
         query_params=query_params,
         searchFields=searchFields,
         Model=Ride,
         Schema=RideRead,
+        customFilters=[["user_id", user_id]],
     )
 
 
