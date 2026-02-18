@@ -294,7 +294,6 @@ def delete_role(
         return api_response(403, "You are not allowed to update this ride")
 
     filenames_to_delete = []
-
     # -------------------------
     # CAR PIC
     # -------------------------
@@ -306,7 +305,7 @@ def delete_role(
     # -------------------------
     # OTHER IMAGES
     # -------------------------
-    if isinstance(ride.other_images, list):
+    if isinstance(ride.other_images, List) and ride.other_images:
         for img in ride.other_images:
             if isinstance(img, dict) and img.get("filename"):
                 filenames_to_delete.append(img["filename"])
