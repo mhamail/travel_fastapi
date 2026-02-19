@@ -394,24 +394,13 @@ def applyFilters(
         column = getattr(Model, column_name)  # map to SQLModel column
 
         start_date = parse_date(dateRange[1])
-        end_date = (
-            parse_date(dateRange[2])
-            if len(dateRange) > 2 and dateRange[2]
-            else datetime.now(timezone.utc)
+        end_date = parse_date(dateRange[2]) if len(dateRange) > 2 else None
+
+        statement = (
+            statement.where(and_(column >= start_date, column <= end_date))
+            if end_date
+            else statement.where(column >= start_date)
         )
-
-        # If user didn’t specify end time, set to 23:59:59
-        if (
-            end_date.hour == 0
-            and end_date.minute == 0
-            and end_date.second == 0
-            and end_date.microsecond == 0
-        ):
-            end_date = end_date.replace(
-                hour=23, minute=59, second=59, microsecond=999999
-            )
-
-        statement = statement.where(and_(column >= start_date, column <= end_date))
 
     # Sorting
 

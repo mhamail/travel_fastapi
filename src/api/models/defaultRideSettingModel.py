@@ -80,6 +80,7 @@ class DefaultRideSettingForm:
         total_price: Optional[str] = Form(None),
         # Boolean
         negotiable: Optional[bool] = Form(None),
+        car_pic: Optional[Union[UploadFile, str]] = File(None),
     ):
         # Convert empty → None
         # Convert empty string → None
@@ -101,17 +102,6 @@ class DefaultRideSettingForm:
             if val in ["false", "0", "no"]:
                 return False
             return None  # fallback
-
-        # Convert JSON string → dict
-        def clean_json(v):
-
-            v = clean(v)
-            if v is None:
-                return None
-            try:
-                return json.loads(v)
-            except Exception:
-                raise ValueError(f"Invalid JSON: {v}")
 
         # Convert to int
         def to_int(v):
@@ -147,6 +137,7 @@ class DefaultRideSettingForm:
         self.total_price = to_float(total_price)
 
         self.negotiable = to_bool(negotiable)
+        self.car_pic = car_pic
 
 
 class DefaultRideSettingUserRead(SQLModel):

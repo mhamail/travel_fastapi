@@ -30,12 +30,11 @@ async def create_default_ride(
     user: requireSignin,
     session: GetSession,
     request: DefaultRideSettingForm = Depends(),
-    car_pic: UploadFile | None = File(None),  # ✅ HERE
 ):
     user_id = user.get("id")
 
-    if car_pic:
-        files = [car_pic]
+    if request.car_pic:
+        files = [request.car_pic]
         saved_files = await uploadImage(files, thumbnail=False)
 
         records = entryMedia(session, saved_files)
@@ -56,7 +55,6 @@ async def create_default_ride(
     session.add(ride)
     session.commit()
     session.refresh(ride)
-    print("typeof", type(ride))
     # ride_json = jsonable_encoder(RideRead.model_validate(ride))
     return api_response(200, "Default Ride Setting Create Successfully", ride)
 
@@ -67,7 +65,6 @@ async def update_ride(
     user: requireSignin,
     session: GetSession,
     request: DefaultRideSettingForm = Depends(),
-    car_pic: UploadFile | None = File(None),  # ✅ HERE
 ):
     user_id = user.get("id")
 
@@ -85,7 +82,7 @@ async def update_ride(
     # ------------------------------
     # Handle car_pic replacement
     # ------------------------------
-    if car_pic:
+    if isinstance(request.car_pic, UploadFile):
         # 1️⃣ Delete OLD car pic
         if ride.car_pic and ride.car_pic.get("filename"):
             delete_media_items(
@@ -94,16 +91,25 @@ async def update_ride(
             )
 
         # 2️⃣ Upload NEW car pic
-        saved_files = await uploadImage([car_pic], thumbnail=False)
+        files = [request.car_pic]
+        saved_files = await uploadImage(files, thumbnail=False)
         records = entryMedia(session, saved_files)
 
         request.car_pic = records[0].model_dump(
             include={"id", "filename", "original", "media_type"}
         )
     else:
-        request.car_pic = None  # keep unchanged if not sent
+        # Not a file → do NOT update
+        if hasattr(request, "car_pic"):
+            delattr(request, "car_pic")
 
     update_data = updateOp(ride, request, session)
+
+    # ------------------------------
+    # Convert arrival_time string → datetime
+    # ------------------------------
+    if "arrival_time" in update_data and update_data["arrival_time"]:
+        update_data["arrival_time"] = parse_date(update_data["arrival_time"])
 
     session.commit()
     session.refresh(update_data)

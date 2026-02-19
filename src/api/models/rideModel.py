@@ -113,10 +113,6 @@ class UserRideForm:
         negotiable: Optional[bool] = Form(None),
         active: Optional[bool] = Form(None),
         # file upload
-        # ⬇️ FIX: Allow UploadFile OR empty string
-        # File field
-        # car_pic: Optional[UploadFile] = File(None),
-        # other_images: List[UploadFile] = File(default=[]),  # ✅ Multiple files
         car_pic: Optional[Union[UploadFile, str]] = File(None),
         other_images: List[UploadFile] = File(default=[]),
         delete_images: Optional[List[str]] = Form(None),
