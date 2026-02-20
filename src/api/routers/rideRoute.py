@@ -3,8 +3,10 @@ import json
 from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, File
 from fastapi import UploadFile as UploadFileType
+from sqlmodel import select
 from starlette.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
+from src.api.models.mediaModel import Media
 from src.api.core.dependencies import ListQueryParams
 from src.api.core.response import raiseExceptions
 from src.api.core.utility import (
@@ -33,9 +35,10 @@ async def create_ride(
     request: UserRideForm = Depends(),
 ):
     user_id = user.get("id")
-    # print(type(request.other_images))
+    print("==================>", type(request.car_pic))
+    print("====================>", request.car_pic)
     # print("request====================", request.other_images)
-    if request.car_pic:
+    if isinstance(request.car_pic, UploadFile):
         files = [request.car_pic]
         saved_files = await uploadImage(files, thumbnail=False)
 
@@ -44,6 +47,16 @@ async def create_ride(
         request.car_pic = records[0].model_dump(
             include={"id", "filename", "original", "media_type"}
         )
+
+    if isinstance(request.car_pic, str):  # URL should be string, not URL type
+        statement = select(Media).where(Media.filename == request.car_pic)
+        media = session.exec(statement).first()
+
+        if media:
+            request.car_pic = media.model_dump(
+                include={"id", "filename", "original", "media_type"}
+            )
+
     if request.other_images:
         other_files = request.other_images
         saved_files = await uploadImage(other_files, thumbnail=False)

@@ -15,6 +15,7 @@ from pydantic import (
 )
 
 from sqlmodel import JSON, Column, Field, Index, Relationship, SQLModel, text
+from src.api.models.mediaModel import MediaRead
 from src.api.models.userModel import UserRead
 from src.api.models.rideModel import CarType
 from src.api.core.response import api_response
@@ -152,7 +153,7 @@ class DefaultRideSettingRead(SQLModel, TimeStampReadModel):
     user_id: int
     user: Optional[DefaultRideSettingUserRead] = None
     car_number: str
-    car_pic: Optional[Dict[str, Any]] = None
+    car_pic: Optional[MediaRead] = None
 
     seats_available: int
     price_per_seat: Optional[float] = None
