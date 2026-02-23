@@ -19,8 +19,13 @@ class Review(TimeStampedModel, table=True):
     reviewer_id: int = Field(foreign_key="users.id")
     target_id: int = Field(foreign_key="users.id")
 
-    rating: int = Field(ge=1, le=5)
-    comment: Optional[str] = None
+    rating: int = Field(
+        nullable=False,
+        ge=1,
+        le=5,
+        description="Rating from 1 to 5",
+    )
+    comment: Optional[str] = Field(default=None)
 
     # relationships
     reviewer: Optional["User"] = Relationship(
@@ -28,6 +33,14 @@ class Review(TimeStampedModel, table=True):
     )
     target: Optional["User"] = Relationship(
         sa_relationship_kwargs={"foreign_keys": "[Review.target_id]"}
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "reviewer_id",
+            "target_id",
+            name="uq_reviewer_target",
+        ),
     )
 
 
