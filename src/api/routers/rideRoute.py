@@ -35,8 +35,7 @@ async def create_ride(
     request: UserRideForm = Depends(),
 ):
     user_id = user.get("id")
-    print("==================>", type(request.car_pic))
-    print("====================>", request.car_pic)
+
     # print("request====================", request.other_images)
     if isinstance(request.car_pic, UploadFile):
         files = [request.car_pic]

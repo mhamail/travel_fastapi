@@ -339,7 +339,6 @@ def applyFilters(
                 filters.append(or_(*ors))
 
             statement = statement.where(and_(*filters))
-            return statement
 
         except Exception as e:
             return api_response(
@@ -362,8 +361,6 @@ def applyFilters(
 
         if filters:
             statement = statement.where(and_(*filters))
-
-        return statement
 
     # Number range
     if numberRange:
