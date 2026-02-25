@@ -128,3 +128,27 @@ def list_reviews(
         data,
         response["total"],
     )
+
+
+@router.get("/stats/{user_id}")
+def stats_reviews(
+    user_id: int,
+    session: GetSession,
+):
+    stats = session.exec(
+        select(
+            func.avg(Review.rating),
+            func.count(Review.id),
+            func.min(Review.updated_at),
+        ).where(Review.target_id == user_id)
+    ).one()
+
+    return api_response(
+        200,
+        "data found",
+        {
+            "averageRating": float(stats[0] or 0),
+            "totalReviews": stats[1],
+            "startDate": stats[2],
+        },
+    )
