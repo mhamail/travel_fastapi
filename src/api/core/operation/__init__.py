@@ -99,6 +99,7 @@ def listop(
     customFilters = filters.get("customFilters")
     stringArrayFilters = filters.get("stringArrayFilters")
     objectArrayFilters = filters.get("objectArrayFilters")
+    geoFilters = filters.get("geoFilters")
 
     # Apply Filters
     statement = applyFilters(
@@ -114,6 +115,7 @@ def listop(
         sort=sort if sort else '["created_at", "desc"]',
         stringArrayFilters=stringArrayFilters,
         objectArrayFilters=objectArrayFilters,
+        geoFilters=geoFilters,
     )
 
     # Total count (before pagination)
@@ -136,6 +138,7 @@ def listRecords(
     join_options: list = [],
     Schema: type[SQLModel] = None,
     otherFilters=None,
+    geo_filters: Optional[List[List[str]]] = None,
     Statement=None,
 ):
     session = next(get_session())  # get actual Session object
@@ -160,6 +163,7 @@ def listRecords(
             "customFilters": customFilters,
             "stringArrayFilters": stringArrayFilters,
             "objectArrayFilters": objectArrayFilters,
+            "geoFilters": geo_filters,
         }
 
         result = listop(

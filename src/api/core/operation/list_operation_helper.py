@@ -2,6 +2,7 @@ import ast
 from datetime import datetime, timezone
 import json
 from typing import List, Optional
+from sqlalchemy import Float, cast
 from sqlmodel import SQLModel, and_, asc, desc, func, or_
 from sqlmodel.sql.expression import Select, SelectOfScalar
 
@@ -293,6 +294,7 @@ def applyFilters(
     sort: Optional[str] = None,
     stringArrayFilters: Optional[List[List[str]]] = None,
     objectArrayFilters: Optional[List[List[str]]] = None,
+    geoFilters: Optional[List[List[str]]] = None,
 ):
 
     if otherFilters:
@@ -448,4 +450,53 @@ def applyFilters(
             except Exception as e:
                 return api_response(400, f"objectArrayFilter parse error: {e}")
 
+    # ======================================
+    # GEO FILTER
+    # ======================================
+
+    if geoFilters:
+        try:
+            parsed_terms = (
+                ast.literal_eval(geoFilters)
+                if isinstance(geoFilters, str)
+                else geoFilters
+            )
+
+            geo_dict = dict(parsed_terms)
+
+            lat = float(geo_dict.get("from_lat"))
+            lng = float(geo_dict.get("from_lng"))
+            radius = float(geo_dict.get("radius_from", 5))
+
+            if lat is None or lng is None:
+                return api_response(400, "Latitude and Longitude required")
+
+            # 🔥 CORRECT WAY (no .astext)
+            coordinates = Model.from_location.op("->")("coordinates")
+
+            lng_col = cast(
+                coordinates.op("->>")(0),  # ->> 0
+                Float,
+            )
+
+            lat_col = cast(
+                coordinates.op("->>")(1),  # ->> 1
+                Float,
+            )
+
+            # Haversine (KM)
+            distance = 6371 * func.acos(
+                func.cos(func.radians(lat))
+                * func.cos(func.radians(lat_col))
+                * func.cos(func.radians(lng_col) - func.radians(lng))
+                + func.sin(func.radians(lat)) * func.sin(func.radians(lat_col))
+            )
+
+            statement = statement.where(distance <= radius)
+
+            # Optional: sort nearest first
+            statement = statement.order_by(distance.asc())
+
+        except Exception as e:
+            return api_response(400, f"Geo filter error: {str(e)}")
     return statement

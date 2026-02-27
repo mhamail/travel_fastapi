@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import json
 from typing import List, Optional, Union
-from fastapi import APIRouter, Depends, File
+from fastapi import APIRouter, Depends, File, Query
 from fastapi import UploadFile as UploadFileType
 from sqlmodel import select
 from starlette.datastructures import UploadFile
@@ -251,7 +251,14 @@ def findOne(
 
 
 @router.get("/list", response_model=list[RideRead])
-def list(query_params: ListQueryParams, session: GetSession):
+def list(
+    query_params: ListQueryParams,
+    session: GetSession,
+    geo_filters: Optional[str] = Query(
+        None,
+        description='Example : [["from_lat",33.5953242],["from_lng",73.0543264],["radius_from",20]]',
+    ),
+):
     query_params = vars(query_params)
     searchFields = [
         "from_address",
@@ -261,9 +268,11 @@ def list(query_params: ListQueryParams, session: GetSession):
         "car_name",
         "car_model",
     ]
+    print("query_params===========", query_params)
 
     return listRecords(
         query_params=query_params,
+        geo_filters=geo_filters,
         searchFields=searchFields,
         Model=Ride,
         Schema=RideRead,
