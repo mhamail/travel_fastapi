@@ -268,7 +268,7 @@ def list(
         "car_name",
         "car_model",
     ]
-    print("query_params===========", query_params)
+    print("geo_filters===========", geo_filters)
 
     return listRecords(
         query_params=query_params,
