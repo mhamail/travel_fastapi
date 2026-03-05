@@ -11,7 +11,7 @@ from typing import List, Optional, TypedDict
 from sqlmodel import select
 
 BASE_DIR = "/var/www"
-SUB_DIR = "media"
+SUB_DIR = "travelmedia"
 MEDIA_DIR = os.path.join(BASE_DIR, SUB_DIR)
 
 ALLOWED_RAW_EXT = [".webp", ".avif", ".ico", ".svg"]
