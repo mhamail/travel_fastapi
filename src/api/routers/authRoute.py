@@ -257,17 +257,16 @@ def refresh_user_token(
     exp_time = datetime.now(timezone.utc) + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
+    content = {
+        "message": "Login successful",
+        "token_type": "bearer",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "user": user_data,
+        "exp": exp_time.isoformat(),
+    }
 
-    return api_response(
-        200,
-        "Refresh",
-        {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "exp": exp_time.isoformat(),
-            **user_data,
-        },
-    )
+    return api_response(200, "Refresh", content)
 
 
 @router.post("/update-email")
