@@ -62,6 +62,7 @@ class User(
     currency_symbol: str = Field(description="Currency symbol (e.g., ₨)")
     otp_code: Optional[str] = None
     otp_expires_at: Optional[datetime] = None
+    # need_refresh: bool = False
     # relation
     role: Optional["Role"] = Relationship(back_populates="users")
     rides: Optional[List["Ride"]] = Relationship(back_populates="user")

@@ -230,6 +230,46 @@ def login_user(
     return api_response(200, "Login successful", content)
 
 
+@router.put("/refresh-user")
+def refresh_user_token(
+    user: requireSignin,
+    session: GetSession,
+):
+    user_id = user.get("id")
+    db_user = session.get(User, user_id)
+
+    if not db_user:
+        return api_response(404, "User not found")
+
+    user_data = {
+        "id": db_user.id,
+        "email": db_user.email,
+        "phone": db_user.phone,
+        "is_root": db_user.is_root or False,
+        "role": db_user.role,
+        "verified": db_user.verified or False,
+    }
+
+    # Generate tokens
+    access_token = create_access_token(user_data)
+    refresh_token = create_access_token(user_data, refresh=True)
+
+    exp_time = datetime.now(timezone.utc) + timedelta(
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+
+    return api_response(
+        200,
+        "Refresh",
+        {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "exp": exp_time.isoformat(),
+            **user_data,
+        },
+    )
+
+
 @router.post("/update-email")
 def update_email(
     request: updateEmail,
