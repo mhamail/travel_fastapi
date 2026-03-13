@@ -174,11 +174,15 @@ def login_user(
         user = session.exec(
             select(User)
             .options(selectinload(User.role))
-            .where(User.phone == identifier)
+            .where(User.phone == identifier or User.unverified_phone == identifier)
         ).first()
 
     if not user:
         return api_response(400, "User not found")
+
+    # If phone login → must be verified
+    if not user.verified and "@" not in identifier:
+        return api_response(401, "Please Login with Email, Your Number is Not Verified")
 
     # If email login → must be verified
     if "@" in identifier and not user.email_verified:
@@ -241,6 +245,8 @@ def refresh_user_token(
     if not db_user:
         return api_response(404, "User not found")
 
+    user_read = UserRead.model_validate(db_user)
+
     user_data = {
         "id": db_user.id,
         "email": db_user.email,
@@ -258,15 +264,14 @@ def refresh_user_token(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
     content = {
-        "message": "Login successful",
         "token_type": "bearer",
         "access_token": access_token,
         "refresh_token": refresh_token,
-        "user": user_data,
+        "user": user_read,
         "exp": exp_time.isoformat(),
     }
 
-    return api_response(200, "Refresh", content)
+    return api_response(200, "Refresh User", content)
 
 
 @router.post("/update-email")

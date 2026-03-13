@@ -140,6 +140,7 @@ def listRecords(
     otherFilters=None,
     geo_filters: Optional[List[List[str]]] = None,
     Statement=None,
+    badStatusMsg: str = "No Result found",
 ):
     session = next(get_session())  # get actual Session object
     try:
@@ -181,7 +182,7 @@ def listRecords(
         )
 
         if not result["data"]:
-            return api_response(400, "No Result found")
+            return api_response(400, badStatusMsg)
         # Convert each SQLModel Model instance into a ModelRead Pydantic model
         if not Schema:
             return result

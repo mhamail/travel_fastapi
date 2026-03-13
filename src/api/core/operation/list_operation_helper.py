@@ -388,6 +388,7 @@ def applyFilters(
     if dateRange:
         dateRangeParse = json.loads(dateRange)
         dateRange = tuple(dateRangeParse)
+        print("===========================daterange", dateRange)
 
         column_name = dateRange[0]  # e.g. "created_at"
         column = getattr(Model, column_name)  # map to SQLModel column

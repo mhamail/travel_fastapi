@@ -30,7 +30,7 @@ router = APIRouter(prefix="/ride", tags=["ride"])
 
 @router.post("/create", response_model=RideRead)
 async def create_ride(
-    user: requireSignin,
+    user: verifiedUser,
     session: GetSession,
     request: UserRideForm = Depends(),
 ):
@@ -268,7 +268,7 @@ def list(
         "car_name",
         "car_model",
     ]
-    print("geo_filters===========", geo_filters)
+    # print("geo_filters===========", geo_filters)
 
     return listRecords(
         query_params=query_params,
@@ -276,6 +276,7 @@ def list(
         searchFields=searchFields,
         Model=Ride,
         Schema=RideRead,
+        badStatusMsg="No Ride found",
     )
 
 

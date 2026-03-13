@@ -77,9 +77,11 @@ async def value_error_handler(request: Request, exc: ValueError):
         message = str(exc).split('"')[-2] + " is not a valid field name."
     else:
         message = str(exc)
+
+    print(message)
     return JSONResponse(
         status_code=400,
-        content={"message": message},
+        # content={"message": message},
     )
 
 
