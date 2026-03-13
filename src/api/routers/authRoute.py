@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from random import randint
 from fastapi import APIRouter, Depends, Response
-from sqlmodel import delete, select
+from sqlmodel import delete, or_, select
 from src.api.core.operation import updateOp
 from src.api.core.response import raiseExceptions
 from src.api.core.smtp import send_email
@@ -174,7 +174,7 @@ def login_user(
         user = session.exec(
             select(User)
             .options(selectinload(User.role))
-            .where(User.phone == identifier or User.unverified_phone == identifier)
+            .where(or_(User.phone == identifier, User.unverified_phone == identifier))
         ).first()
 
     if not user:
